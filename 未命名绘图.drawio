@@ -1,9 +1,88 @@
-<mxfile host="app.diagrams.net" modified="2024-07-06T03:53:31.077Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" version="24.6.4" etag="B-KxvinG9MG9KBxDETqg" type="github">
+<mxfile host="app.diagrams.net" modified="2024-07-06T04:08:27.905Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" etag="DJawA1t_JwYTXUtq7zv3" version="24.6.4" type="github">
   <diagram name="第 1 页" id="ZZP4DtZy3uweT7do1U-z">
-    <mxGraphModel>
+    <mxGraphModel dx="1022" dy="684" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-1" target="yVVEGM8As_ze5ZNv9kSu-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-1" value="start" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="50" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-2" target="yVVEGM8As_ze5ZNv9kSu-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-2" value="input the pipeline code" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="160" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-4" target="yVVEGM8As_ze5ZNv9kSu-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-4" value="input the fault code which want to predict" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="260" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-10" target="yVVEGM8As_ze5ZNv9kSu-15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-18" value="YES" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="yVVEGM8As_ze5ZNv9kSu-17">
+          <mxGeometry x="-0.3405" y="-3" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-10" target="yVVEGM8As_ze5ZNv9kSu-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-20" value="NO" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="yVVEGM8As_ze5ZNv9kSu-19">
+          <mxGeometry x="-0.5636" y="3" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-10" value="check out is there exsit&lt;div&gt;&amp;nbsp;pre trained model&lt;/div&gt;" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="275" y="360" width="170" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-22" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-15" target="yVVEGM8As_ze5ZNv9kSu-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-15" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;get the important feature of the pre trained model&lt;div&gt;&lt;br&gt;&lt;/div&gt;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="110" y="510" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-28" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-16" target="yVVEGM8As_ze5ZNv9kSu-27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-16" value="use random forest method to selected the important feature" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="510" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-21" target="yVVEGM8As_ze5ZNv9kSu-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-21" value="Use the filtered feature columns to reduce the dataset" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="110" y="610" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-26" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-23" target="yVVEGM8As_ze5ZNv9kSu-25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-23" value="compare datasets difference between the pre train one and current one" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="110" y="710" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-25" value="use transfer learning method to adjust pre train model&#39;s parameters" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="110" y="800" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-30" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-27" target="yVVEGM8As_ze5ZNv9kSu-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-27" value="save these feature&#39;s information" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="610" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-32" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-29" target="yVVEGM8As_ze5ZNv9kSu-31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-29" value="Use the filtered feature columns to reduce the dataset" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="700" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="yVVEGM8As_ze5ZNv9kSu-31" value="........" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="790" width="120" height="60" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
