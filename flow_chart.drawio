@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2024-07-07T08:58:23.616Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" etag="uVYXHASZ5U9Ka3FgyELV" version="24.6.4" type="github">
+<mxfile host="app.diagrams.net" modified="2024-07-07T10:05:58.328Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36" etag="yV2BHsnPtTyxendIvct_" version="24.6.4" type="github">
   <diagram name="第 1 页" id="ZZP4DtZy3uweT7do1U-z">
-    <mxGraphModel dx="1022" dy="684" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1703" dy="1140" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -67,7 +67,7 @@
         <mxCell id="yVVEGM8As_ze5ZNv9kSu-23" value="compare datasets difference between the pre train one and current one" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
           <mxGeometry x="110" y="870" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="H2bx0KXIKEUTD5f2-NcN-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-25" target="H2bx0KXIKEUTD5f2-NcN-1">
+        <mxCell id="H2bx0KXIKEUTD5f2-NcN-2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="yVVEGM8As_ze5ZNv9kSu-25" target="H2bx0KXIKEUTD5f2-NcN-1" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="yVVEGM8As_ze5ZNv9kSu-25" value="use transfer learning method to adjust pre train model&#39;s parameters" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
@@ -97,7 +97,7 @@
         <mxCell id="yVVEGM8As_ze5ZNv9kSu-33" value="Use the improved random parameter search method to perform random parameter search" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
           <mxGeometry x="420" y="1040" width="220" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="H2bx0KXIKEUTD5f2-NcN-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="yVVEGM8As_ze5ZNv9kSu-35" target="H2bx0KXIKEUTD5f2-NcN-3">
+        <mxCell id="H2bx0KXIKEUTD5f2-NcN-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="yVVEGM8As_ze5ZNv9kSu-35" target="H2bx0KXIKEUTD5f2-NcN-3" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="yVVEGM8As_ze5ZNv9kSu-35" value="save and return the best model" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
@@ -115,21 +115,24 @@
         <mxCell id="yVVEGM8As_ze5ZNv9kSu-41" value="add the lag and diff feature to give the datasets &quot;time series properties&quot;" style="rounded=1;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="300" y="440" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="H2bx0KXIKEUTD5f2-NcN-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="H2bx0KXIKEUTD5f2-NcN-1" target="H2bx0KXIKEUTD5f2-NcN-3">
+        <mxCell id="H2bx0KXIKEUTD5f2-NcN-4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="H2bx0KXIKEUTD5f2-NcN-1" target="H2bx0KXIKEUTD5f2-NcN-3" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="170" y="1310" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="H2bx0KXIKEUTD5f2-NcN-1" value="return the adjusted model" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+        <mxCell id="H2bx0KXIKEUTD5f2-NcN-1" value="return the adjusted model" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
           <mxGeometry x="110" y="1060" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="H2bx0KXIKEUTD5f2-NcN-3" value="use model to predict the test datasets" style="whiteSpace=wrap;html=1;rounded=1;" vertex="1" parent="1">
+        <mxCell id="X2XlCmgp9ga-gIq1uGMV-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="H2bx0KXIKEUTD5f2-NcN-3" target="H2bx0KXIKEUTD5f2-NcN-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="H2bx0KXIKEUTD5f2-NcN-3" value="use model to predict the test datasets" style="whiteSpace=wrap;html=1;rounded=1;" parent="1" vertex="1">
           <mxGeometry x="294" y="1280" width="120" height="60" as="geometry" />
         </mxCell>
-        <mxCell id="H2bx0KXIKEUTD5f2-NcN-5" value="END" style="rhombus;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="314" y="1350" width="80" height="80" as="geometry" />
+        <mxCell id="H2bx0KXIKEUTD5f2-NcN-5" value="END" style="rhombus;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="314" y="1370" width="80" height="80" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
