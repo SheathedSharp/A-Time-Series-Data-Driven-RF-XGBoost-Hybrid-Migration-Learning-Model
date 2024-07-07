@@ -1,0 +1,11 @@
+Model: xgboost4003_101
+Accuracy: 0.9999930882901812
+Precision: 1.0
+Classification Report:
+False: {'precision': 0.9999930670623063, 'recall': 1.0, 'f1-score': 0.9999965335191368, 'support': 144238.0}
+True: {'precision': 1.0, 'recall': 0.9977477477477478, 'f1-score': 0.9988726042841037, 'support': 444.0}
+accuracy: 0.9999930882901812
+macro avg: {'precision': 0.9999965335311531, 'recall': 0.9988738738738738, 'f1-score': 0.9994345689016202, 'support': 144682.0}
+weighted avg: {'precision': 0.9999930883380997, 'recall': 0.9999930882901812, 'f1-score': 0.999993084406045, 'support': 144682.0}
+
+
