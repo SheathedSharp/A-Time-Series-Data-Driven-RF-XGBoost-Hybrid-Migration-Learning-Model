@@ -30,12 +30,12 @@ def pipeline_failure_prediction():
     model_name = f'xgboost{fault_code}_{pipeline_code}'
     
     # 加载预训练模型
-    model, model_exist = load_pre_trained_model(model_name)
+    model, model_exist = load_pre_trained_model(model_name, need_load=False)
 
     
     # 使用随机森林选择重要特征
     X_train_selected, X_test_selected, y_train_original, y_test_original = select_important_feature(
-        train_data, test_data, fault_code, fault_description, model_exist)
+        train_data, test_data, fault_code, fault_description, model_exist, need_select=True)
 
     # 记录开始时间
     start_time = time.time()
@@ -115,7 +115,7 @@ def pipeline_failure_prediction():
         model = transfer_learning(model, X_train_selected, y_train_original)
 
     # 在测试集上评估模型
-    y_pred = model.predict(X_test_selected)
+    y_pred = model.predict(X_test_scaled)
 
     # 计算性能指标
     accuracy = accuracy_score(y_test_original, y_pred)
@@ -149,7 +149,11 @@ def pipeline_failure_prediction():
     # 打印结果
     print(f"Results for model {model_name} saved to {output_file_path}")    
 
-def load_pre_trained_model(model_name):
+def load_pre_trained_model(model_name, need_load=True):
+    # 是否需要加载预训练模型
+    if not need_load:
+        return None, False
+
     # 使用split方法分割字符串，并选择第一个元素
     model_prefix = model_name.split("_")[0]
     model_path = os.path.join('model/', f'{model_prefix}_101.model.pkl')

@@ -1,11 +1,11 @@
 Model: xgboost4003_101
-Accuracy: 0.9999930882901812
-Precision: 1.0
+Accuracy: 0.9999516190344542
+Precision: 0.9970674486803519
 Classification Report:
-False: {'precision': 0.9999930670623063, 'recall': 1.0, 'f1-score': 0.9999965335191368, 'support': 144238.0}
-True: {'precision': 1.0, 'recall': 0.9977477477477478, 'f1-score': 0.9988726042841037, 'support': 444.0}
-accuracy: 0.9999930882901812
-macro avg: {'precision': 0.9999965335311531, 'recall': 0.9988738738738738, 'f1-score': 0.9994345689016202, 'support': 144682.0}
-weighted avg: {'precision': 0.9999930883380997, 'recall': 0.9999930882901812, 'f1-score': 0.999993084406045, 'support': 144682.0}
+False: {'precision': 0.9999652785011424, 'recall': 0.9999861111111111, 'f1-score': 0.9999756946976247, 'support': 144000.0}
+True: {'precision': 0.9970674486803519, 'recall': 0.9927007299270073, 'f1-score': 0.9948792977322605, 'support': 685.0}
+accuracy: 0.9999516190344542
+macro avg: {'precision': 0.9985163635907471, 'recall': 0.9963434205190592, 'f1-score': 0.9974274962149425, 'support': 144685.0}
+weighted avg: {'precision': 0.9999515589488237, 'recall': 0.9999516190344542, 'f1-score': 0.9999515661983244, 'support': 144685.0}
 
 

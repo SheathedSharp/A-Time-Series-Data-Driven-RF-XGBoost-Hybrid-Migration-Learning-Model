@@ -2,7 +2,7 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-06-21 21:51:41
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-07-06 16:26:15
+LastEditTime: 2024-07-08 15:22:33
 FilePath: /JUPYTER/RF.py
 Description: 随机森林进行特征选取
 '''
@@ -18,7 +18,7 @@ from utils.data_process import data_process
 from utils.get_fault_description import get_fault_description
 from utils.balance_subset import balance_subset
 
-def select_important_feature(train_data, test_data, fault_code, fault_description, model_exist=False):
+def select_important_feature(train_data, test_data, fault_code, fault_description, model_exist=False, need_select=True):
     """
     使用随机森林进行特征选取
     :param train_data: 训练数据
@@ -26,6 +26,7 @@ def select_important_feature(train_data, test_data, fault_code, fault_descriptio
     :param fault_code: 故障代码
     :param fault_description: 故障描述
     :param model_exist: 是否存在预训练模型
+    :param need_select: 是否需要选择特征
     """
     print("start select_important_feature......")
 
@@ -40,6 +41,10 @@ def select_important_feature(train_data, test_data, fault_code, fault_descriptio
     y_train_original = y_train.copy()
     X_test_original = X_test.copy()
     y_test_original = y_test.copy()
+
+    # 如果不需要选择特征，直接返回原始数据
+    if not need_select:
+        return X_train_original, X_test_original, y_train_original, y_test_original
 
     if model_exist:
         print("model exist! loading selected features......")
