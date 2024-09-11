@@ -2,7 +2,7 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-06-21 21:51:41
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-07-08 15:22:33
+LastEditTime: 2024-09-11 17:14:07
 FilePath: /JUPYTER/RF.py
 Description: 随机森林进行特征选取
 '''
@@ -102,7 +102,7 @@ def use_RF(X_train_original, X_test_original, y_train_original, y_test_original,
 
     # 使用随机参数搜索
     random_search = RandomizedSearchCV(
-        estimator=rf_model, param_distributions=param_space, n_iter=5, scoring=scoring, cv=2, verbose=2, n_jobs=-1, refit='precision'
+        estimator=rf_model, param_distributions=param_space, n_iter=10, scoring=scoring, cv=4, verbose=2, n_jobs=-1, refit='precision'
     )
 
     # 拟合模型
@@ -142,7 +142,7 @@ def use_RF(X_train_original, X_test_original, y_train_original, y_test_original,
     # 计算总贡献度
     total_importance = sum(feature_importances)
     # 设置阈值
-    threshold = 0.95
+    threshold = 0.90
 
     # 特征贡献度排序
     sorted_indices = np.argsort(feature_importances)[::-1]

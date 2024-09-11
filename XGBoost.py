@@ -11,6 +11,7 @@ from sklearn.metrics import accuracy_score, precision_score, classification_repo
 
 from RF import select_important_feature
 from load_data import read_data
+from utils.caculate_ks import calculate_ks
 from utils.split_train_test_datasets import split_train_test_datasets
 from utils.get_fault_description import get_fault_description
 
@@ -68,7 +69,7 @@ def pipeline_failure_prediction():
         )
 
         # 初始化 precision 的阈值和迭代次数
-        precision_threshold = 0.70
+        precision_threshold = 0.7
         iteration = 0
 
         while True:
@@ -116,10 +117,12 @@ def pipeline_failure_prediction():
 
     # 在测试集上评估模型
     y_pred = model.predict(X_test_scaled)
+    y_scores = model.predict_proba(X_test_scaled)[:, 1]  # 获取预测概率
 
     # 计算性能指标
     accuracy = accuracy_score(y_test_original, y_pred)
     precision = precision_score(y_test_original, y_pred)
+    ks_statistic = calculate_ks(y_test_original, y_scores)  # 计算KS统计量
     report = classification_report(
         y_test_original, y_pred, output_dict=True)
 
@@ -137,6 +140,7 @@ def pipeline_failure_prediction():
         f.write(f"Model: {model_name}\n")
         f.write(f"Accuracy: {accuracy}\n")
         f.write(f"Precision: {precision}\n")
+        f.write(f"KS Statistic: {ks_statistic}\n") 
         f.write("Classification Report:\n")
         for metric, score in report.items():
             f.write(f"{metric}: {score}\n")
