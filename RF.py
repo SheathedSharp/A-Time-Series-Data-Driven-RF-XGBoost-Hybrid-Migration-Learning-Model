@@ -2,13 +2,14 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-06-21 21:51:41
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-09-11 17:14:07
+LastEditTime: 2024-10-10 20:47:45
 FilePath: /JUPYTER/RF.py
 Description: 随机森林进行特征选取
 '''
 import numpy as np
 import time
 import pandas as pd
+import random
 
 from sklearn.model_selection import  RandomizedSearchCV
 from sklearn.ensemble import RandomForestClassifier
@@ -18,7 +19,7 @@ from utils.data_process import data_process
 from utils.get_fault_description import get_fault_description
 from utils.balance_subset import balance_subset
 
-def select_important_feature(train_data, test_data, fault_code, fault_description, model_exist=False, need_select=True):
+def select_important_feature(train_data, test_data, fault_code, fault_description, model_exist=False, need_select=True, need_temporal_features=False):
     """
     使用随机森林进行特征选取
     :param train_data: 训练数据
@@ -27,6 +28,7 @@ def select_important_feature(train_data, test_data, fault_code, fault_descriptio
     :param fault_description: 故障描述
     :param model_exist: 是否存在预训练模型
     :param need_select: 是否需要选择特征
+    :param need_temporal_features: 是否需要时序化数据
     """
     print("start select_important_feature......")
 
@@ -34,8 +36,8 @@ def select_important_feature(train_data, test_data, fault_code, fault_descriptio
     y_train = (train_data[f'{fault_description}'] == fault_code)
     y_test = (test_data[f'{fault_description}'] == fault_code)
 
-    X_train = data_process(train_data)
-    X_test = data_process(test_data)
+    X_train = data_process(train_data, need_temporal_features=need_temporal_features)
+    X_test = data_process(test_data, need_temporal_features=need_temporal_features)
 
     X_train_original = X_train.copy()
     y_train_original = y_train.copy()
@@ -76,51 +78,79 @@ def use_RF(X_train_original, X_test_original, y_train_original, y_test_original,
 
     :return: X_train_selected, X_test_selected
     """
+    # 输入是否需要进行连续均衡切片采样
+    is_balance = input("Do you want to balance the ratio of positive and negative samples ? (yes/no): ").lower().strip() == 'yes'
+
+    rate = 4
+    if is_balance:
+        rate = int(input("Please input the ratio of positive and negative samples: "))
+
     # 使用 balance_subset 函数来均衡正负样本数量
-    X_train, X_test, y_train, y_test= balance_subset(X_train_original, X_test_original, y_train_original, y_test_original, rate=4, is_balance=True)
+    X_train, X_test, y_train, y_test= balance_subset(X_train_original, X_test_original, y_train_original, y_test_original, rate=rate, is_balance=is_balance)
 
     # 确保特征和标签的形状正确
     print("after balance X_train.shape:", X_train.shape)
     print("after balance X_test.shape:", X_test.shape)
 
-    # 定义参数空间
-    param_space = {
-        'n_estimators': [50, 100],
-        'max_depth': [10, 20],
-        'min_samples_split': [2, 5],
-        'min_samples_leaf': [3, 5],
+    initial_param_space = {
+        'n_estimators': [50, 100, 200, 300],
+        'max_depth': [5, 10, 15, 20, None],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4],
+        'max_features': ['sqrt', 'log2', None]
     }
+    param_space = initial_param_space.copy()
 
-    # 记录开始时间
-    start_time = time.time()
+    precision_threshold = 0.7
+    max_iterations = 10
+    reset_interval = 3
 
-    # 初始化随机森林模型
-    rf_model = RandomForestClassifier()
+    best_precision = 0
+    best_params = None
 
     # 定义评分函数
     scoring = {'precision': 'precision', 'auc': 'roc_auc'}
 
-    # 使用随机参数搜索
-    random_search = RandomizedSearchCV(
-        estimator=rf_model, param_distributions=param_space, n_iter=10, scoring=scoring, cv=4, verbose=2, n_jobs=-1, refit='precision'
-    )
+    start_time = time.time()
 
-    # 拟合模型
-    random_search.fit(X_train, y_train)
+    for iteration in range(max_iterations):
+        if iteration % reset_interval == 0 and iteration > 0:
+            param_space = initial_param_space.copy()
+            print("重置参数空间")
 
-    # 输出最佳参数
-    print("Best parameters found: ", random_search.best_params_)
+        random_search = RandomizedSearchCV(
+            estimator=RandomForestClassifier(random_state=42), 
+            param_distributions=param_space, 
+            n_iter=1, scoring=scoring, cv=2, verbose=2, n_jobs=-1, refit='precision'
+        )
 
-    # 在测试集上评估模型
-    y_pred = random_search.predict(X_test)
+        random_search.fit(X_train, y_train)
 
-    # 记录结束时间
+        print(f"迭代 {iteration + 1} - 最佳参数: ", random_search.best_params_)
+
+        y_pred = random_search.predict(X_test)
+
+        accuracy = accuracy_score(y_test, y_pred)
+        precision = precision_score(y_test, y_pred, zero_division=1)
+        print(f"迭代 {iteration + 1} - 精确度:", precision)
+
+        if precision > best_precision:
+            best_precision = precision
+            best_params = random_search.best_params_
+
+        if precision >= precision_threshold:
+            break
+
+        param_space = update_param_space(param_space, random_search.best_params_)
+
     end_time = time.time()
-
-    # 打印模型训练时间
     print(f"随机森林模型训练时间: {end_time - start_time:.2f} 秒")
 
-    # 打印其他性能指标
+    best_model = RandomForestClassifier(**best_params, random_state=42)
+    best_model.fit(X_train, y_train)
+
+    y_pred = best_model.predict(X_test)
+
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, zero_division=1)
     recall = recall_score(y_test, y_pred, zero_division=1)
@@ -173,6 +203,37 @@ def use_RF(X_train_original, X_test_original, y_train_original, y_test_original,
     X_test_selected = X_test_original[selected_features]
 
     return X_train_selected, X_test_selected
+
+def update_param_space(param_space, best_params):
+    new_param_space = {}
+    for param, values in param_space.items():
+        if param in best_params:
+            best_value = best_params[param]
+            if isinstance(values, list) and best_value in values:
+                index = values.index(best_value)
+                if index == 0:
+                    new_values = [values[0], values[1]]
+                elif index == len(values) - 1:
+                    new_values = [values[-2], values[-1]]
+                else:
+                    new_values = [values[index-1], best_value, values[index+1]]
+            else:
+                new_values = values
+
+            if isinstance(values[0], int):
+                new_values = [int(v) for v in new_values if isinstance(v, (int, float))]
+            
+            if random.random() < 0.2:
+                if isinstance(values[0], int):
+                    new_values.append(random.randint(min(values), max(values)))
+                elif isinstance(values[0], float):
+                    new_values.append(random.uniform(min(values), max(values)))
+        else:
+            new_values = values
+        
+        new_param_space[param] = new_values
+    
+    return new_param_space
 
 def save_important_feature(selected_features, fault_code):
     """

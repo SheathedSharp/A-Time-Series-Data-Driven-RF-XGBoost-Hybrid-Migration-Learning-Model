@@ -2,7 +2,7 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-07-04 16:48:00
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-07-06 21:08:58
+LastEditTime: 2024-10-08 14:53:01
 FilePath: /Pipeline-Failure-Prediction/utils/data_process.py
 Description: 对数据进行处理，添加差值特征列和滞后特征列
 '''
@@ -19,6 +19,7 @@ def remove_irrelevant_features(data):
 
     返回值：
     data: DataFrame, 移除无关特征列后的数据集
+    feature_columns: list, 特征列名列表
     """
     exclude_columns = ['日期', '时间', '生产线编号', '物料推送装置故障1001',
                        '物料检测装置故障2001', '填装装置检测故障4001', '填装装置定位故障4002', '填装装置填装故障4003',
@@ -63,18 +64,22 @@ def add_difference_and_lag_features(data, feature_columns):
 
     return pd.DataFrame(new_features_dict)
 
-def data_process(data):
+def data_process(data, need_temporal_features=True):
     """
     对数据进行处理
 
     参数：
     data: DataFrame, 包含特征和标签的数据集
+    need_temporal_features: bool, 是否需要添加时间特征
 
     返回值：
     DataFrame
     """
     data, feature_columns = remove_irrelevant_features(data)
-    difference_and_lag_features = add_difference_and_lag_features(data, feature_columns)
-    data = pd.concat([data, difference_and_lag_features], axis=1)
+    if need_temporal_features:
+        difference_and_lag_features = add_difference_and_lag_features(data, feature_columns)
+        data = pd.concat([data, difference_and_lag_features], axis=1)
+    else:
+        data = data[feature_columns]
     print("after data process data.shape is:", data.shape)
     return data
