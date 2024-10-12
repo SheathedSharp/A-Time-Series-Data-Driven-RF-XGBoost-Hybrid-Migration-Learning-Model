@@ -2,7 +2,7 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-07-05 11:41:16
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-10-10 20:58:03
+LastEditTime: 2024-10-12 18:04:25
 FilePath: /Application of Time Series-Driven XGBoost Model in Pipeline Fault Prediction/XGBoost.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -38,14 +38,18 @@ def pipeline_failure_prediction():
     # 输入是否需要加载预训练模型
     need_load = input("Do you want to load a pre-trained model? (yes/no): ").lower().strip() == 'yes'
     
+    need_select = False
+    need_temporal_features = False
+
     # 加载预训练模型
     model, model_exist = load_pre_trained_model(need_load=need_load)
 
-    # 输入是否需要时序化数据
-    need_temporal_features = input("Do you want to load a temporal features? (yes/no): ").lower().strip() == 'yes'
+    if not model_exist:
+        # 输入是否需要时序化数据
+        need_temporal_features = input("Do you want to load a temporal features? (yes/no): ").lower().strip() == 'yes'
 
-    # 输入是否需要进行RF特征选择
-    need_select = input("Do you want to use RF to select important features? (yes/no): ").lower().strip() == 'yes'
+        # 输入是否需要进行RF特征选择
+        need_select = input("Do you want to use RF to select important features? (yes/no): ").lower().strip() == 'yes'
 
     X_train_selected, X_test_selected, y_train_original, y_test_original = select_important_feature(
         train_data, test_data, fault_code, fault_description, model_exist, need_select=need_select, need_temporal_features=need_temporal_features)
@@ -131,7 +135,12 @@ def pipeline_failure_prediction():
 
     # 有预训练模型时，使用迁移学习方法来调整模型参数
     else:
-        model = transfer_learning(model, X_train_selected, y_train_original)
+        # 特征标准化
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train_selected)
+        X_test_scaled = scaler.transform(X_test_selected)
+        model = transfer_learning(model, X_train_scaled, y_train_original)
+
 
     # 在测试集上评估模型
     y_pred = model.predict(X_test_scaled)

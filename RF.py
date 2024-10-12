@@ -2,7 +2,7 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-06-21 21:51:41
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-10-10 20:47:45
+LastEditTime: 2024-10-12 17:54:32
 FilePath: /JUPYTER/RF.py
 Description: 随机森林进行特征选取
 '''
@@ -19,7 +19,7 @@ from utils.data_process import data_process
 from utils.get_fault_description import get_fault_description
 from utils.balance_subset import balance_subset
 
-def select_important_feature(train_data, test_data, fault_code, fault_description, model_exist=False, need_select=True, need_temporal_features=False):
+def select_important_feature(train_data, test_data, fault_code, fault_description, model_exist=False, need_select=False, need_temporal_features=False):
     """
     使用随机森林进行特征选取
     :param train_data: 训练数据
@@ -36,6 +36,11 @@ def select_important_feature(train_data, test_data, fault_code, fault_descriptio
     y_train = (train_data[f'{fault_description}'] == fault_code)
     y_test = (test_data[f'{fault_description}'] == fault_code)
 
+    if model_exist:
+        need_temporal_features = True
+        need_select = True
+
+    # 数据处理
     X_train = data_process(train_data, need_temporal_features=need_temporal_features)
     X_test = data_process(test_data, need_temporal_features=need_temporal_features)
 
@@ -245,7 +250,7 @@ def save_important_feature(selected_features, fault_code):
     selected_features_pd = pd.DataFrame(selected_features, columns=['feature_name'])
 
     # 保存所选特征的名称到CSV文件
-    selected_features_pd.to_csv(f'./model/{fault_code}_selected_features.csv', index=False)
+    selected_features_pd.to_csv(f'./feature/{fault_code}_selected_features.csv', index=False)
 
 def load_important_feature(fault_code):
     """
@@ -254,8 +259,7 @@ def load_important_feature(fault_code):
     :return: 所选特征
     """
     # 加载所选特征的名称
-    selected_features = pd.read_csv(f'./model/{fault_code}_selected_features.csv')
-
+    selected_features = pd.read_csv(f'./feature/{fault_code}_selected_features.csv')
     # 将所选特征转换为list
     selected_features = selected_features['feature_name'].tolist()
     return selected_features

@@ -1,0 +1,13 @@
+Model: xgboost5001_102
+accuracy: 0.9999867178648703
+precision: 1.0
+recall: 0.9388379204892966
+f1_score: 0.9684542586750788
+average_precision: 0.93980197126853
+best_threshold: 0.8238586783409119
+precision_best: 1.0
+recall_best: 0.9388379204892966
+f1_best: 0.9684542586750788
+confusion_matrix:
+[[1505455       0]
+ [     20     307]]
