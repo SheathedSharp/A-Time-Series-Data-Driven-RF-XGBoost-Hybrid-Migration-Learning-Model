@@ -2,7 +2,7 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-07-05 11:41:16
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-10-12 18:04:25
+LastEditTime: 2024-10-13 01:01:24
 FilePath: /Application of Time Series-Driven XGBoost Model in Pipeline Fault Prediction/XGBoost.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -139,7 +139,14 @@ def pipeline_failure_prediction():
         scaler = StandardScaler()
         X_train_scaled = scaler.fit_transform(X_train_selected)
         X_test_scaled = scaler.transform(X_test_selected)
+
         model = transfer_learning(model, X_train_scaled, y_train_original)
+
+        # # 计算源域和目标域的错误率
+        # source_error_rate =  0.0039983724  # M101中故障1001的示例
+        # target_error_rate = 0.0001443652  # M102中故障1001的示例
+
+        # model = transfer_learning(model, X_train_scaled, y_train_original, source_error_rate, target_error_rate)
 
 
     # 在测试集上评估模型
@@ -191,36 +198,73 @@ def transfer_learning(model, target_X_train_selected, target_y_train_original):
 
     return model
 
-def update_param_space(param_space, best_params):
-    new_param_space = {}
-    for param, values in param_space.items():
-        best_value = best_params[param]
-        index = values.index(best_value)
-        
-        if index == 0:
-            new_values = [values[0], (values[0] + values[1]) / 2, values[1]]
-        elif index == len(values) - 1:
-            new_values = [values[-2], (values[-2] + values[-1]) / 2, values[-1]]
-        else:
-            new_values = [
-                (values[index-1] + best_value) / 2,
-                best_value,
-                (best_value + values[index+1]) / 2
-            ]
-        
-        if isinstance(values[0], int):
-            new_values = [int(v) for v in new_values]
-        
-        # 添加随机性
-        if random.random() < 0.2:  # 20%的概率
-            if isinstance(values[0], int):
-                new_values.append(random.randint(min(values), max(values)))
-            else:
-                new_values.append(random.uniform(min(values), max(values)))
-        
-        new_param_space[param] = new_values
+# def transfer_learning(source_model, target_X_train, target_y_train, source_error_rate, target_error_rate):
+#     # 域适应：根据领域知识调整特征重要性
+#     feature_importance = source_model.feature_importances_
+#     domain_weight = target_error_rate / source_error_rate
+#     adjusted_feature_importance = feature_importance * domain_weight
+
+#     # 创建一个新模型，使用调整后的特征重要性
+#     new_model = XGBClassifier()
+#     new_model.fit(target_X_train, target_y_train, xgb_model=source_model)
     
-    return new_param_space
+#     # 应用实例权重
+#     sample_weights = compute_sample_weights(target_X_train, source_model)
+    
+#     # 使用正则化进行微调
+#     new_model.set_params(
+#         learning_rate=0.01,  # 降低学习率以进行微调
+#         reg_alpha=0.1,  # L1正则化
+#         reg_lambda=1.0  # L2正则化
+#     )
+    
+#     # 逐层解冻和微调
+#     n_layers = len(new_model.get_booster().get_dump())
+#     for i in range(n_layers):
+#         if i > 0:
+#             new_model.get_booster().set_param(f'updater[{i}]', 'grow_colmaker,prune')
+#         new_model.fit(target_X_train, target_y_train, sample_weight=sample_weights, xgb_model=new_model)
+    
+#     return new_model
+
+
+# def compute_sample_weights(X, source_model):
+#     # 计算目标样本与源域之间的相似度
+#     source_predictions = source_model.predict_proba(X)
+#     similarity = 1 - np.abs(source_predictions[:, 1] - 0.5) * 2
+#     return similarity
+
+
+# def update_param_space(param_space, best_params):
+#     new_param_space = {}
+#     for param, values in param_space.items():
+#         best_value = best_params[param]
+#         index = values.index(best_value)
+        
+#         if index == 0:
+#             new_values = [values[0], (values[0] + values[1]) / 2, values[1]]
+#         elif index == len(values) - 1:
+#             new_values = [values[-2], (values[-2] + values[-1]) / 2, values[-1]]
+#         else:
+#             new_values = [
+#                 (values[index-1] + best_value) / 2,
+#                 best_value,
+#                 (best_value + values[index+1]) / 2
+#             ]
+        
+#         if isinstance(values[0], int):
+#             new_values = [int(v) for v in new_values]
+        
+#         # 添加随机性
+#         if random.random() < 0.2:  # 20%的概率
+#             if isinstance(values[0], int):
+#                 new_values.append(random.randint(min(values), max(values)))
+#             else:
+#                 new_values.append(random.uniform(min(values), max(values)))
+        
+#         new_param_space[param] = new_values
+    
+#     return new_param_space
 
 if __name__ == "__main__":
     pipeline_failure_prediction()
