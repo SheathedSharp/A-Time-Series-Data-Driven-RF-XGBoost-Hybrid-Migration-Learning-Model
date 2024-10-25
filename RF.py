@@ -2,7 +2,7 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-06-21 21:51:41
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-10-12 17:54:32
+LastEditTime: 2024-10-17 22:29:51
 FilePath: /JUPYTER/RF.py
 Description: 随机森林进行特征选取
 '''
@@ -106,7 +106,7 @@ def use_RF(X_train_original, X_test_original, y_train_original, y_test_original,
     }
     param_space = initial_param_space.copy()
 
-    precision_threshold = 0.7
+    precision_threshold = 0.1
     max_iterations = 10
     reset_interval = 3
 

@@ -2,7 +2,7 @@
 Author: hiddenSharp429 z404878860@163.com
 Date: 2024-07-05 11:41:16
 LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-10-13 01:01:24
+LastEditTime: 2024-10-17 20:16:23
 FilePath: /Application of Time Series-Driven XGBoost Model in Pipeline Fault Prediction/XGBoost.py
 Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 '''
@@ -159,13 +159,6 @@ def pipeline_failure_prediction():
     print("Max:", np.max(y_scores))
     print("Mean:", np.mean(y_scores))
     print("Median:", np.median(y_scores))
-
-    plt.figure(figsize=(10, 5))
-    plt.hist(y_scores, bins=50)
-    plt.title("Distribution of Prediction Probabilities")
-    plt.xlabel("Predicted Probability")
-    plt.ylabel("Count")
-    plt.show()
 
     # 使用新的评估函数
     results = evaluate_model(y_test_original, y_pred, y_scores, model_name, report_output_folder)
