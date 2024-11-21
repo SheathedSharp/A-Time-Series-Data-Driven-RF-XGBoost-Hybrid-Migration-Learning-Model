@@ -1,85 +1,61 @@
-'''
-Author: hiddenSharp429 z404878860@163.com
-Date: 2024-07-04 16:48:00
-LastEditors: hiddenSharp429 z404878860@163.com
-LastEditTime: 2024-10-08 14:53:01
-FilePath: /Pipeline-Failure-Prediction/utils/data_process.py
-Description: 对数据进行处理，添加差值特征列和滞后特征列
-'''
-
-import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
+from config import EXCLUDE_COLUMNS, FAULT_DESCRIPTIONS
 
 def remove_irrelevant_features(data):
-    """
-    移除无关特征列
+    """Remove irrelevant features from the dataset
 
-    参数：
-    data: DataFrame, 包含特征和标签的数据集
+    Args:
+        data: includes all the features and labels
 
-    返回值：
-    data: DataFrame, 移除无关特征列后的数据集
-    feature_columns: list, 特征列名列表
+    Returns:
+        data: the dataset with irrelevant features removed
     """
-    exclude_columns = ['日期', '时间', '生产线编号', '物料推送装置故障1001',
-                       '物料检测装置故障2001', '填装装置检测故障4001', '填装装置定位故障4002', '填装装置填装故障4003',
-                       '加盖装置定位故障5001', '加盖装置加盖故障5002', '拧盖装置定位故障6001', '拧盖装置拧盖故障6002']
-    feature_columns = [col for col in data.columns if col not in exclude_columns]
+    feature_columns = [col for col in data.columns if col not in EXCLUDE_COLUMNS]
     return data[feature_columns], feature_columns
 
-def add_difference_and_lag_features(data, feature_columns):
+def get_irrelevant_features_data(data):
+    """Get irrelevant features data from the dataset
+
+    Args:
+        data: includes all the features and labels
+
+    Returns:
+        data: the dataset with irrelevant data
     """
-    添加差值和滞后特征列
-    
-    参数：
-    data: DataFrame, 包含特征和标签的数据集
-    feature_columns: list, 特征列名列表
+    irrelevant_feature_columns = [col for col in data.columns if col in EXCLUDE_COLUMNS]
+    return data[irrelevant_feature_columns]
 
-    返回值：
-    DataFrame
+
+def merge_irrelevant_features(processed_data, irrelevant_data):
+    """Merge irrelevant features back to processed data.
+
+    Args:
+        processed_data: The processed data without irrelevant features
+        irrelevant_data: The original data containing irrelevant features
+
+    Returns:
+        pd.DataFrame: Merged dataframe containing both processed and irrelevant features
     """
-    new_features_dict = {}
-    for i in range(len(feature_columns)):
-        for j in range(i + 1, len(feature_columns)):
-            col1, col2 = feature_columns[i], feature_columns[j]
-            diff_col_name = f'{col1}_{col2}_diff'
-            new_features_dict[diff_col_name] = data[col1] - data[col2]
-            
-    # 计算滞后特征    
-    for col in feature_columns:
-        lag_col_name = f'{col}_lag'
-        values = data[col].values
-        lag_values = np.zeros(len(values), dtype=int)
-        lag_duration = 0
+    final_data = processed_data.copy()
+    for col in EXCLUDE_COLUMNS:
+        final_data[col] = irrelevant_data[col].values
+    return final_data
 
-        for idx in range(1, len(values)):
-            if values[idx] == values[idx - 1]:
-                lag_duration += 1
-            else:
-                lag_duration = 0
-            lag_values[idx] = lag_duration
+def split_train_test_datasets(data, fault_code):
+    all_dates = data['Date'].unique()
 
-        new_features_dict[lag_col_name] = lag_values
+    train_dates, test_dates = train_test_split(
+        all_dates, test_size=0.2)
 
+    train_data = data[data['Date'].isin(train_dates)]
+    test_data = data[data['Date'].isin(test_dates)]
 
-    return pd.DataFrame(new_features_dict)
+    fault_description = FAULT_DESCRIPTIONS[fault_code]
 
-def data_process(data, need_temporal_features=True):
-    """
-    对数据进行处理
+    # Check if the fault code is in the train and test datasets
+    if np.sum(train_data[f'{fault_description}'] == fault_code) == 0 or np.sum(
+            test_data[f'{fault_description}'] == fault_code) == 0:
+        train_data, test_data = split_train_test_datasets(data, fault_code)
 
-    参数：
-    data: DataFrame, 包含特征和标签的数据集
-    need_temporal_features: bool, 是否需要添加时间特征
-
-    返回值：
-    DataFrame
-    """
-    data, feature_columns = remove_irrelevant_features(data)
-    if need_temporal_features:
-        difference_and_lag_features = add_difference_and_lag_features(data, feature_columns)
-        data = pd.concat([data, difference_and_lag_features], axis=1)
-    else:
-        data = data[feature_columns]
-    print("after data process data.shape is:", data.shape)
-    return data
+    return train_data, test_data

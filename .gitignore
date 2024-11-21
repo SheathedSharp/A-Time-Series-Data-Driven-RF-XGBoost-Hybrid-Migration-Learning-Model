@@ -15,3 +15,19 @@ data/M103.csv
 data/M104.csv
 
 .idea/
+
+data/raw/
+
+data/selected_features/
+
+data/temporal_features/
+
+*.xlsx
+
+experiments/pic/
+
+experiments/results/
+
+old_files/
+
+trained_models/
