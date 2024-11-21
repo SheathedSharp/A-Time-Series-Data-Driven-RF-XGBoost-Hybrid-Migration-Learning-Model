@@ -1,5 +1,4 @@
-__pycache__        
-data/M102.csv    
+__pycache__
 utils/__pycache__
 memo.md
 .DS_Store
@@ -16,18 +15,16 @@ data/M104.csv
 
 .idea/
 
-data/raw/
-
-data/selected_features/
-
-data/temporal_features/
-
 *.xlsx
 
 experiments/pic/
 
-experiments/results/
 
 old_files/
 
-trained_models/
+
+*.csv
+
+*.txt
+
+*.pkl
