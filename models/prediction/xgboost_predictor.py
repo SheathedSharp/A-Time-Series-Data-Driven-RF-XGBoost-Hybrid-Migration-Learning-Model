@@ -23,12 +23,12 @@ class XGBoostPredictor:
             'max_depth': [5, 7, 10, 15],
         }
 
-    def train(self, x_train, x_test, y_train, y_test, need_select=False):
+    def train(self, x_train, x_test, y_train, y_test, parameter_optimization=False):
         """Train the XGBoost model."""
         x_train_scaled = self.scaler.fit_transform(x_train)
         x_test_scaled = self.scaler.transform(x_test)
 
-        if need_select:
+        if parameter_optimization:
             best_params = self._optimize_parameters_with_selection(x_train_scaled, y_train, x_test_scaled, y_test)
         else:
             best_params = self._simple_parameter_search(x_train_scaled, y_train)
@@ -41,7 +41,7 @@ class XGBoostPredictor:
         return self.model
 
     def _optimize_parameters_with_selection(self, x_train, y_train, x_test, y_test,
-                                            precision_threshold=0.7, max_iterations=10, reset_interval=3):
+                                            precision_threshold=0.9999, max_iterations=10, reset_interval=3):
         """Optimize model parameters with iterative selection process."""
         param_space = self.initial_param_space.copy()
         best_precision = 0

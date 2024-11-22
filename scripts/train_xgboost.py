@@ -57,7 +57,7 @@ def get_selected_features(production_line_code, fault_code, rf_ratio, rf_thresho
             
     return selected_features
 
-def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_ratio=10, rf_threshold=0.9, rf_balance=True):
+def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_ratio=10, rf_threshold=0.9, rf_balance=True, parameter_optimization=False):
     """Train and evaluate XGBoost model with optional RF feature selection."""
 
     # Load data
@@ -81,7 +81,7 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
             fault_code, 
             rf_ratio, 
             rf_threshold, 
-            rf_balance
+            rf_balance,
         )
         x_train = x_train[selected_features]
         x_test = x_test[selected_features]
@@ -94,7 +94,7 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
         y_train=y_train,
         x_test=x_test,
         y_test=y_test,
-        need_select=False
+        parameter_optimization=parameter_optimization
     )
 
     scaler = StandardScaler()
@@ -116,8 +116,9 @@ if __name__ == "__main__":
     parser.add_argument('--rf-ratio', type=float, default=10.0, help='Negative/positive ratio for balanced sampling')
     parser.add_argument('--rf-threshold', type=float, default=0.9, help='Threshold for feature selection')
     parser.add_argument('--no-balance', action='store_false', dest='rf_balance', help='Do not balance dataset')
+    parser.add_argument('--parameter-opt', action='store_true', dest='parameter_optimization', help='Use parameter optimization')
 
-    parser.set_defaults(temporal=True, ues_rf=True, rf_balance=True)
+    parser.set_defaults(temporal=True, ues_rf=True, rf_balance=True, parameter_optimization=False)
 
     # Parse command line arguments
     args = parser.parse_args()
@@ -129,5 +130,6 @@ if __name__ == "__main__":
         args.use_rf,
         args.rf_ratio,
         args.rf_threshold,
-        args.rf_balance
+        args.rf_balance,
+        args.parameter_optimization
     )
