@@ -36,7 +36,62 @@ Our approach consists of four main components:
 ....
 
 ## Usage
-....
+### 1. Temporalize Features
+To generate time series-aware features, run:
+``` 
+python scripts/temporalize_dataset.py --production_line 1
+```
+
+Required parameter:
+
+`--production_line` specifies the production line number.
+
+
+### 2. Random Forest Feature Selection
+To select features using Random Forest, run:
+```
+python scripts/select_features.py --production_line 1 --fault_code 1001
+```
+Required parameters:
+
+`--production_line` specifies the production line number.
+
+`--fault_code` specifies the fault code.
+
+Optional parameters:
+
+`--ratio` specifies the ratio of negative to positive samples (default: 10.0)
+
+`--threshold` specifies the feature importance threshold (default: 0.9).
+
+`--no-balance` disables balanced sampling.
+
+`--no-temporal` disables temporal feature engineering.
+
+### 3. XGBoost Prediction
+To train the XGBoost model, run:
+```
+python scripts/train_xgboost.py --production_line 1 --fault_code 1001
+```
+Required parameters:
+
+`--production_line` specifies the production line number.
+
+`--fault_code` specifies the fault code.
+
+Optional parameters:
+
+`--no-temporal` disables temporal feature engineering.
+
+`--parameter-opt` enables hyperparameter optimization.
+
+`--no-rf` disables RF feature selection.
+
+`--no-balance` disables balanced sampling.
+
+`--rf_ratio` specifies the ratio of negative to positive samples for RF (default: 10.0).
+
+`--rf_threshold` specifies the feature importance threshold for RF (default: 0.9).
 
 ## Citation
 ....
