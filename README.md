@@ -33,13 +33,17 @@ Our approach consists of four main components:
 ```
 
 ## Requirements
-....
+we use uv to manage the project.
+### Install project dependencies
+```bash
+uv sync
+```
 
 ## Usage
 ### 1. Temporalize Features
 To generate time series-aware features, run:
 ``` 
-python scripts/temporalize_dataset.py --production_line 1
+uv run python scripts/temporalize_dataset.py --production_line 1
 ```
 
 Required parameter:
@@ -50,7 +54,7 @@ Required parameter:
 ### 2. Random Forest Feature Selection
 To select features using Random Forest, run:
 ```
-python scripts/select_features.py --production_line 1 --fault_code 1001
+uv run python scripts/select_features.py --production_line 1 --fault_code 1001
 ```
 Required parameters:
 
@@ -71,7 +75,7 @@ Optional parameters:
 ### 3. XGBoost Prediction
 To train the XGBoost model, run:
 ```
-python scripts/train_xgboost.py --production_line 1 --fault_code 1001
+uv run python scripts/train_xgboost.py --production_line 1 --fault_code 1001
 ```
 Required parameters:
 

@@ -28,3 +28,5 @@ old_files/
 *.txt
 
 *.pkl
+
+fault_analysis_results/
