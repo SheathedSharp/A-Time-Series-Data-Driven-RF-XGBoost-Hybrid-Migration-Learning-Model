@@ -6,14 +6,13 @@ from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 
 
-def select_and_save_features(production_line_code, fault_code, threshold, negative_positive_ratio, balance=True, temporal=True):
+def select_and_save_features(production_line_code, fault_code, threshold, balance=True, temporal=True):
     """Select important features for a specific fault code and save results
 
     Args:
         production_line_code (int): Production line code
         fault_code (int): Fault code
         threshold (float): Threshold for feature selection
-        negative_positive_ratio (float): Ratio for balanced sampling
         balance (bool): Balance dataset
         temporal (bool): Use Temporal data
     """
@@ -63,7 +62,6 @@ if __name__ == "__main__":
 
     parser.add_argument('--no-temporal', action='store_false', dest='temporal', help='Do not use Temporal data')
 
-    parser.add_argument('--ratio', type=float, default=10.0, help='Negative/positive ratio for balanced sampling')
     parser.add_argument('--threshold', type=float, default=0.9, help='Threshold for feature selection')
     parser.add_argument('--no-balance', action='store_false', dest='balance', help='Do not balance dataset')
 
@@ -74,4 +72,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Call function with parsed arguments
-    select_and_save_features(args.production_line, args.fault_code, args.threshold, args.ratio, args.balance, args.temporal)
+    select_and_save_features(args.production_line, args.fault_code, args.threshold, args.balance, args.temporal)

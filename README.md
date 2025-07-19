@@ -64,8 +64,6 @@ Required parameters:
 
 Optional parameters:
 
-`--ratio` specifies the ratio of negative to positive samples (default: 10.0)
-
 `--threshold` specifies the feature importance threshold (default: 0.9).
 
 `--no-balance` disables balanced sampling.
@@ -92,8 +90,6 @@ Optional parameters:
 `--no-rf` disables RF feature selection.
 
 `--no-balance` disables balanced sampling.
-
-`--rf_ratio` specifies the ratio of negative to positive samples for RF (default: 10.0).
 
 `--rf_threshold` specifies the feature importance threshold for RF (default: 0.9).
 

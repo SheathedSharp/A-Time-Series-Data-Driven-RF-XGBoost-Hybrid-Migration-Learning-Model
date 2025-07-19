@@ -10,7 +10,7 @@ from utils.model_evaluation import evaluate_model
 from config import MODEL_DIR, FAULT_DESCRIPTIONS, get_feature_path
 import argparse
 
-def get_selected_features(production_line_code, fault_code, rf_ratio, rf_threshold, rf_balance):
+def get_selected_features(production_line_code, fault_code, rf_threshold, rf_balance):
     """Get or generate selected features for the specified fault code."""
     features_path = get_feature_path(fault_code)
     
@@ -24,7 +24,6 @@ def get_selected_features(production_line_code, fault_code, rf_ratio, rf_thresho
                 'python', 'scripts/select_features.py',
                 '--production_line', str(production_line_code),
                 '--fault_code', str(fault_code),
-                '--ratio', str(rf_ratio),
                 '--threshold', str(rf_threshold)
             ]
 
@@ -57,7 +56,7 @@ def get_selected_features(production_line_code, fault_code, rf_ratio, rf_thresho
             
     return selected_features
 
-def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_ratio=10, rf_threshold=0.9, rf_balance=True, parameter_optimization=False):
+def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_threshold=0.9, rf_balance=True, parameter_optimization=False):
     """Train and evaluate XGBoost model with optional RF feature selection."""
 
     # Load data
@@ -79,7 +78,6 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
         selected_features = get_selected_features(
             production_line_code, 
             fault_code, 
-            rf_ratio, 
             rf_threshold, 
             rf_balance,
         )
@@ -113,7 +111,6 @@ if __name__ == "__main__":
     parser.add_argument('--no-temporal', action='store_false', dest='temporal', help='Do not use Temporal data')
 
     parser.add_argument('--no-rf', action='store_false', dest='use_rf', help='Do not use Random Forest for feature selection')
-    parser.add_argument('--rf-ratio', type=float, default=10.0, help='Negative/positive ratio for balanced sampling')
     parser.add_argument('--rf-threshold', type=float, default=0.9, help='Threshold for feature selection')
     parser.add_argument('--no-balance', action='store_false', dest='rf_balance', help='Do not balance dataset')
     parser.add_argument('--parameter-opt', action='store_true', dest='parameter_optimization', help='Use parameter optimization')
@@ -128,7 +125,6 @@ if __name__ == "__main__":
         args.fault_code,
         args.temporal,
         args.use_rf,
-        args.rf_ratio,
         args.rf_threshold,
         args.rf_balance,
         args.parameter_optimization
