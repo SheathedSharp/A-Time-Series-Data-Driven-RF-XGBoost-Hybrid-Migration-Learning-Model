@@ -7,7 +7,7 @@ class FeatureSelector:
     def __init__(self):
         self.rf_selector = RFSelector()
 
-    def select_important_features(self, train_data, test_data, fault_code, threshold, model_exist=False):
+    def select_important_features(self, train_data, test_data, fault_code, threshold=0.9, model_exist=False):
         """
         Select important features using Random Forest.
 

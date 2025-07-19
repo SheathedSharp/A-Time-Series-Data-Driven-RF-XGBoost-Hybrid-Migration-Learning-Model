@@ -1,4 +1,4 @@
-from old_files import FeatureSelector
+from models.feature_engineering.feature_selector import FeatureSelector
 from config import FAULT_DESCRIPTIONS
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 from models.sampling.balanced_sampler import ContinuousBalancedSliceSampler

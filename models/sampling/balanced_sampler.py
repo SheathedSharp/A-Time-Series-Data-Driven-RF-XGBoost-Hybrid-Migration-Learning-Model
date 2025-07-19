@@ -399,11 +399,3 @@ class ContinuousBalancedSliceSampler:
 
         print("\nDataset Balance Statistics:")
         print(tabulate(table_data, headers=headers, tablefmt="grid"))
-
-
-# 保留原类名以确保向后兼容
-class BalancedSampler(ContinuousBalancedSliceSampler):
-    """Backward compatibility alias for ContinuousBalancedSliceSampler."""
-    def __init__(self, negative_positive_ratio=4.0):
-        # Convert old parameter to new format
-        super().__init__(k=negative_positive_ratio, alpha=1.96, beta=10.0)
