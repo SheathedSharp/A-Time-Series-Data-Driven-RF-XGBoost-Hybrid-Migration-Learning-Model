@@ -6,7 +6,7 @@ from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 
 
-def select_and_save_features(production_line_code, fault_code, threshold, balance=True, temporal=True):
+def select_and_save_features(production_line_code, fault_code, threshold, balance=True, temporal=True, random_state=42):
     """Select important features for a specific fault code and save results
 
     Args:
@@ -15,6 +15,7 @@ def select_and_save_features(production_line_code, fault_code, threshold, balanc
         threshold (float): Threshold for feature selection
         balance (bool): Balance dataset
         temporal (bool): Use Temporal data
+        random_state (int): Random state for reproducibility
     """
     # Load data
     data_loader = DataLoader()
@@ -43,7 +44,7 @@ def select_and_save_features(production_line_code, fault_code, threshold, balanc
     train_data = pd.concat([x_train, y_train], axis=1)
     test_data = pd.concat([x_test, y_test], axis=1)
 
-    feature_selector = FeatureSelector()
+    feature_selector = FeatureSelector(random_state=random_state)
     x_train_selected, x_test_selected = feature_selector.select_important_features(
         train_data=train_data,
         test_data=test_data,
@@ -64,12 +65,19 @@ if __name__ == "__main__":
 
     parser.add_argument('--threshold', type=float, default=0.9, help='Threshold for feature selection')
     parser.add_argument('--no-balance', action='store_false', dest='balance', help='Do not balance dataset')
+    parser.add_argument('--random-state', type=int, default=42, help='Random state for reproducibility')
 
 
     parser.set_defaults(temporal=True, balance=True)
 
     # Parse command line arguments
     args = parser.parse_args()
-
-    # Call function with parsed arguments
-    select_and_save_features(args.production_line, args.fault_code, args.threshold, args.balance, args.temporal)
+    
+    select_and_save_features(
+        args.production_line,
+        args.fault_code,
+        args.threshold,
+        args.balance,
+        args.temporal,
+        args.random_state
+    )

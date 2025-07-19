@@ -1,6 +1,7 @@
 import os
 import subprocess
 import pandas as pd
+import numpy as np
 from sklearn.preprocessing import StandardScaler
 
 from models.prediction.xgboost_predictor import XGBoostPredictor
@@ -10,7 +11,7 @@ from utils.model_evaluation import evaluate_model
 from config import MODEL_DIR, FAULT_DESCRIPTIONS, get_feature_path
 import argparse
 
-def get_selected_features(production_line_code, fault_code, rf_threshold, rf_balance):
+def get_selected_features(production_line_code, fault_code, rf_threshold, rf_balance, random_state=42):
     """Get or generate selected features for the specified fault code."""
     features_path = get_feature_path(fault_code)
     
@@ -24,7 +25,8 @@ def get_selected_features(production_line_code, fault_code, rf_threshold, rf_bal
                 'python', 'scripts/select_features.py',
                 '--production_line', str(production_line_code),
                 '--fault_code', str(fault_code),
-                '--threshold', str(rf_threshold)
+                '--threshold', str(rf_threshold),
+                '--random-state', str(random_state)  # 传递随机种子
             ]
 
             if not rf_balance:  # 如果不需要平衡，才添加 --no-balance 参数
@@ -56,8 +58,19 @@ def get_selected_features(production_line_code, fault_code, rf_threshold, rf_bal
             
     return selected_features
 
-def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_threshold=0.9, rf_balance=True, parameter_optimization=False):
+def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_threshold=0.9, rf_balance=True, parameter_optimization=False, random_state=42):
     """Train and evaluate XGBoost model with optional RF feature selection."""
+    
+    # Set global random seeds for reproducibility
+    np.random.seed(random_state)
+    
+    print(f"\n=== 训练配置 ===")
+    print(f"生产线: {production_line_code}")
+    print(f"故障代码: {fault_code}")
+    print(f"使用时序特征: {temporal}")
+    print(f"使用随机森林特征选择: {use_rf}")
+    print(f"随机种子: {random_state}")
+    print("=" * 20)
 
     # Load data
     data_loader = DataLoader()
@@ -80,12 +93,13 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
             fault_code, 
             rf_threshold, 
             rf_balance,
+            random_state
         )
         x_train = x_train[selected_features]
         x_test = x_test[selected_features]
+        print(f"特征选择完成，使用 {len(selected_features)} 个特征")
 
-
-    predictor = XGBoostPredictor()
+    predictor = XGBoostPredictor(random_state=random_state)
 
     model = predictor.train(
         x_train=x_train,
@@ -97,7 +111,7 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
 
     scaler = StandardScaler()
     x_test_scaled = scaler.fit_transform(x_test)
-    evaluate_model(model,x_test_scaled,y_test)
+    evaluate_model(model, x_test_scaled, y_test)
 
     model_path = os.path.join(MODEL_DIR, f'xgboost_production_line_{production_line_code}_fault_{fault_code}.pkl')
     predictor.save_model(model_path)
@@ -114,8 +128,9 @@ if __name__ == "__main__":
     parser.add_argument('--rf-threshold', type=float, default=0.9, help='Threshold for feature selection')
     parser.add_argument('--no-balance', action='store_false', dest='rf_balance', help='Do not balance dataset')
     parser.add_argument('--parameter-opt', action='store_true', dest='parameter_optimization', help='Use parameter optimization')
+    parser.add_argument('--random-state', type=int, default=42, help='Random state for reproducibility')
 
-    parser.set_defaults(temporal=True, ues_rf=True, rf_balance=True, parameter_optimization=False)
+    parser.set_defaults(temporal=True, use_rf=True, rf_balance=True, parameter_optimization=False)
 
     # Parse command line arguments
     args = parser.parse_args()
@@ -127,5 +142,6 @@ if __name__ == "__main__":
         args.use_rf,
         args.rf_threshold,
         args.rf_balance,
-        args.parameter_optimization
+        args.parameter_optimization,
+        args.random_state
     )

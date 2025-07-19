@@ -12,8 +12,14 @@ from utils.model_evaluation import evaluate_model
 class RFSelector:
     """Random Forest based feature selector with hyperparameter optimization."""
 
-    def __init__(self):
+    def __init__(self, random_state=42):
+        """Initialize RF selector with fixed random state for reproducibility."""
+        self.random_state = random_state
         self.best_model = None
+        # Set random seeds for reproducibility
+        np.random.seed(random_state)
+        random.seed(random_state)
+        
         self.initial_param_space = {
             'n_estimators': [50, 100, 200, 300],
             'max_depth': [5, 10, 15, 20, None],
@@ -26,6 +32,10 @@ class RFSelector:
         """
         Select important features using Random Forest with optimized parameters.
         """
+        # Reset random seeds before each selection to ensure reproducibility
+        np.random.seed(self.random_state)
+        random.seed(self.random_state)
+        
         # Train RF model with optimized parameters
         self._train_optimized_model(x_train, y_train, x_test, y_test)
 
@@ -50,15 +60,19 @@ class RFSelector:
         precision_threshold = 0.1
 
         for iteration in range(10):
+            # Use fixed random state for each iteration based on iteration number
+            iteration_random_state = self.random_state + iteration
+            
             random_search = RandomizedSearchCV(
-                estimator=RandomForestClassifier(random_state=42),
+                estimator=RandomForestClassifier(random_state=self.random_state),
                 param_distributions=param_space,
                 n_iter=1,
                 scoring={'precision': 'precision', 'auc': 'roc_auc'},
                 cv=2,
                 verbose=0,
                 n_jobs=-1,
-                refit='precision'
+                refit='precision',
+                random_state=iteration_random_state  # Fixed random state for reproducible parameter search
             )
 
             random_search.fit(x_train, y_train)
@@ -72,7 +86,7 @@ class RFSelector:
             if precision >= precision_threshold:
                 break
 
-            param_space = self._update_param_space(param_space, random_search.best_params_)
+            param_space = self._update_param_space(param_space, random_search.best_params_, iteration)
 
         training_time = time.time() - start_time
         self._print_training_summary(training_time, random_search.best_params_)
@@ -152,8 +166,11 @@ class RFSelector:
         selected_features = pd.read_csv(f'./feature/{fault_code}_selected_features.csv')
         return selected_features['feature_name'].tolist()
 
-    def _update_param_space(self, param_space, best_params):
-        """Update parameter space based on best parameters."""
+    def _update_param_space(self, param_space, best_params, iteration):
+        """Update parameter space based on best parameters with fixed randomness."""
+        # Use iteration-based seed for reproducible parameter space updates
+        update_random_state = np.random.RandomState(self.random_state + iteration + 100)
+        
         new_param_space = {}
         for param, values in param_space.items():
             if param in best_params:
@@ -167,8 +184,9 @@ class RFSelector:
                 if isinstance(values[0], int):
                     new_values = [int(v) for v in new_values if isinstance(v, (int, float))]
 
-                if random.random() < 0.2:
-                    new_values = self._add_random_value(values, new_values)
+                # Use fixed probability with reproducible random state
+                if update_random_state.random() < 0.2:
+                    new_values = self._add_random_value(values, new_values, update_random_state)
             else:
                 new_values = values
 
@@ -187,10 +205,10 @@ class RFSelector:
             return [values[index - 1], values[index], values[index + 1]]
 
     @staticmethod
-    def _add_random_value(values, new_values):
-        """Add random value to parameter space."""
+    def _add_random_value(values, new_values, random_state):
+        """Add random value to parameter space with fixed random state."""
         if isinstance(values[0], int):
-            new_values.append(random.randint(min(values), max(values)))
+            new_values.append(random_state.randint(min(values), max(values) + 1))
         elif isinstance(values[0], float):
-            new_values.append(random.uniform(min(values), max(values)))
+            new_values.append(random_state.uniform(min(values), max(values)))
         return new_values

@@ -4,8 +4,10 @@ from models.prediction.rf_selector import RFSelector
 class FeatureSelector:
     """Feature selection interface using Random Forest algorithm."""
 
-    def __init__(self):
-        self.rf_selector = RFSelector()
+    def __init__(self, random_state=42):
+        """Initialize feature selector with fixed random state for reproducibility."""
+        self.random_state = random_state
+        self.rf_selector = RFSelector(random_state=random_state)
 
     def select_important_features(self, train_data, test_data, fault_code, threshold=0.9, model_exist=False):
         """
