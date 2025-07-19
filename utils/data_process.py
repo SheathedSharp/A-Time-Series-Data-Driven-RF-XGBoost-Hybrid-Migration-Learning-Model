@@ -46,7 +46,7 @@ def split_train_test_datasets(data, fault_code):
     all_dates = data['Date'].unique()
 
     train_dates, test_dates = train_test_split(
-        all_dates, test_size=0.2)
+        all_dates, test_size=0.2, random_state=42)
 
     train_data = data[data['Date'].isin(train_dates)]
     test_data = data[data['Date'].isin(test_dates)]

@@ -1,6 +1,6 @@
 import pandas as pd
 from models.feature_engineering.feature_selector import FeatureSelector
-from models.sampling.balanced_sampler import BalancedSampler
+from models.sampling.balanced_sampler import ContinuousBalancedSliceSampler
 from config import FAULT_DESCRIPTIONS
 from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
@@ -32,7 +32,13 @@ def select_and_save_features(production_line_code, fault_code, threshold, negati
     x_test = test_data.drop('label', axis=1)
 
     if balance:
-        sampler = BalancedSampler(negative_positive_ratio=negative_positive_ratio)
+        sampler = ContinuousBalancedSliceSampler(
+            k=4.0, 
+            alpha=1.96, 
+            beta=10.0,
+            min_precursor_length=60,
+            max_precursor_length=1800
+        )
         x_train, x_test, y_train, y_test = sampler.balance_dataset(x_train, x_test, y_train, y_test)
 
     train_data = pd.concat([x_train, y_train], axis=1)

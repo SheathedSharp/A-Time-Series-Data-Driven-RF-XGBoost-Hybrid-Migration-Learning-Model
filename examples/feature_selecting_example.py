@@ -1,7 +1,7 @@
 from old_files import FeatureSelector
 from config import FAULT_DESCRIPTIONS
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
-from old_files import BalancedSampler
+from models.sampling.balanced_sampler import ContinuousBalancedSliceSampler
 from utils.data_loader import DataLoader
 import pandas as pd
 
@@ -18,8 +18,13 @@ if __name__ == '__main__':
     y_test = test_data[FAULT_DESCRIPTIONS[1001]] == 1001
     x_test, _ = remove_irrelevant_features(test_data)
 
-    # Initialize sampler with desired negative/positive ratio
-    sampler = BalancedSampler(negative_positive_ratio=10.0)
+    sampler = ContinuousBalancedSliceSampler(
+        k=4.0, 
+        alpha=1.96, 
+        beta=10.0,
+        min_precursor_length=60,
+        max_precursor_length=1800
+    )
 
     # Balance datasets
     X_train_balanced, X_test_balanced, y_train_balanced, y_test_balanced = \
