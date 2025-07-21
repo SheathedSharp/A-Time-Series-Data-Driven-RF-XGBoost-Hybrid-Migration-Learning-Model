@@ -75,7 +75,7 @@ class XGBoostPredictor:
             scoring='precision',
             random_state=self.random_state,  # Fixed random state for reproducible search
             n_jobs=-1,
-            verbose=1
+            verbose=0
         )
         
         random_search.fit(x_train, y_train)

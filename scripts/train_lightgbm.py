@@ -6,6 +6,7 @@ from models.prediction.lightgbm_predictor import LightGBMPredictor
 from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 from utils.model_evaluation import evaluate_model
+from utils.progress_display import create_progress_display
 from config import MODEL_DIR, FAULT_DESCRIPTIONS
 import argparse
 
@@ -13,6 +14,8 @@ import argparse
 def lightgbm_predict(production_line_code, fault_code, temporal, use_rf=True, rf_threshold=0.9,
                      rf_balance=True, parameter_optimization=False):
     """Train and evaluate LightGBM model with optional RF feature selection."""
+
+    progress = create_progress_display()
 
     # Load data
     data_loader = DataLoader()
@@ -29,33 +32,42 @@ def lightgbm_predict(production_line_code, fault_code, temporal, use_rf=True, rf
     x_test = test_data.drop('label', axis=1)
 
     if use_rf:
-        print("\nUsing Random Forest for feature selection...")
-        feature_selector = FeatureSelector()
-        x_train, x_test = feature_selector.select_features(
-            x_train,
-            x_test,
-            production_line_code,
-            fault_code,
-            rf_threshold,
-            rf_balance
+        with progress.feature_selection_status() as status:
+            status.update("Using Random Forest for feature selection...")
+            feature_selector = FeatureSelector()
+            x_train, x_test = feature_selector.select_features(
+                x_train,
+                x_test,
+                production_line_code,
+                fault_code,
+                rf_threshold,
+                rf_balance
+            )
+            status.complete("Feature selection completed")
+
+    with progress.model_training_status() as status:
+        status.update("Initializing LightGBM predictor...")
+        predictor = LightGBMPredictor()
+
+        status.update("Training LightGBM model...")
+        lightgbm_model = predictor.train(
+            x_train=x_train,
+            y_train=y_train,
+            x_test=x_test,
+            y_test=y_test,
+            parameter_optimization=parameter_optimization
         )
 
-    predictor = LightGBMPredictor()
+        status.update("Evaluating model performance...")
+        scaler = StandardScaler()
+        x_test_scaled = scaler.fit_transform(x_test)
+        evaluate_model(lightgbm_model, x_test_scaled, y_test)
 
-    lightgbm_model = predictor.train(
-        x_train=x_train,
-        y_train=y_train,
-        x_test=x_test,
-        y_test=y_test,
-        parameter_optimization=parameter_optimization
-    )
-
-    scaler = StandardScaler()
-    x_test_scaled = scaler.fit_transform(x_test)
-    evaluate_model(lightgbm_model, x_test_scaled, y_test)
-
-    model_path = os.path.join(MODEL_DIR, f'lightgbm_production_line_{production_line_code}_fault_{fault_code}.pkl')
-    predictor.save_model(model_path)
+        status.update("Saving trained model...")
+        model_path = os.path.join(MODEL_DIR, f'lightgbm_production_line_{production_line_code}_fault_{fault_code}.pkl')
+        predictor.save_model(model_path)
+        
+        status.complete("LightGBM model training completed successfully")
 
 
 if __name__ == "__main__":

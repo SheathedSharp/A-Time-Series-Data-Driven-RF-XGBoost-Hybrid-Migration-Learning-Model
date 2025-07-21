@@ -8,14 +8,17 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 from config import FEATURE_DIR
 from utils.model_evaluation import evaluate_model
+from utils.progress_display import create_progress_display
+
 
 class RFSelector:
-    """Random Forest based feature selector with hyperparameter optimization."""
-
+    """Random Forest-based feature selector with optimized parameter tuning."""
+    
     def __init__(self, random_state=42):
         """Initialize RF selector with fixed random state for reproducibility."""
         self.random_state = random_state
         self.best_model = None
+        self.progress = create_progress_display()
         # Set random seeds for reproducibility
         np.random.seed(random_state)
         random.seed(random_state)
@@ -36,16 +39,22 @@ class RFSelector:
         np.random.seed(self.random_state)
         random.seed(self.random_state)
         
-        # Train RF model with optimized parameters
-        self._train_optimized_model(x_train, y_train, x_test, y_test)
+        with self.progress.feature_selection_status() as status:
+            status.update("Training optimized Random Forest model...")
+            # Train RF model with optimized parameters
+            self._train_optimized_model(x_train, y_train, x_test, y_test)
 
-        # Select important features
-        selected_features = self._select_important_features(
-            x_train, self.best_model.feature_importances_, threshold
-        )
+            status.update("Selecting important features...")
+            # Select important features
+            selected_features = self._select_important_features(
+                x_train, self.best_model.feature_importances_, threshold
+            )
 
-        # Save selected features
-        self._save_important_features(selected_features, fault_code)
+            status.update("Saving selected features...")
+            # Save selected features
+            self._save_important_features(selected_features, fault_code)
+
+            status.complete(f"Feature selection completed. Selected {len(selected_features)} features")
 
         # Return selected feature datasets
         return (x_train[selected_features],
@@ -94,17 +103,13 @@ class RFSelector:
 
     def _print_training_summary(self, training_time, best_params):
         """Print training summary in tabular format."""
-        headers = ["Parameter", "Value"]
-        
         # Prepare best parameters table data
-        param_data = [[param, value] for param, value in best_params.items()]
-        param_data.append(["Training Time", f"{training_time:.2f} seconds"])
+        param_data = {param: value for param, value in best_params.items()}
+        param_data["Training Time"] = f"{training_time:.2f} seconds"
         
-        print("\nTraining Summary:")
-        print(tabulate(param_data, headers=headers, tablefmt="grid"))
+        self.progress.display_results_table("Random Forest Training Summary", param_data)
 
-    @staticmethod
-    def _select_important_features(x_train, feature_importances, threshold=0.90):
+    def _select_important_features(self, x_train, feature_importances, threshold=0.90):
         """Select features using greedy approach."""
         total_importance = sum(feature_importances)
         sorted_indices = np.argsort(feature_importances)[::-1]
@@ -123,33 +128,22 @@ class RFSelector:
         
         selected_features = x_train.columns[selected_indices]
 
-        feature_data = []
+        # Display feature selection summary
+        feature_summary = {}
         for i, (feature, importance) in enumerate(zip(selected_features, importances)):
-            feature_data.append([
-                i + 1,
-                feature,
-                f"{importance/total_importance:.4f}",
-                f"{(importance/total_importance)*100:.2f}%",
-                f"{(sum(importances[:i+1])/total_importance)*100:.2f}%"
-            ])
-        
-        print(f"\nFeature Selection Summary (Threshold: {threshold:.2%}):")
-        print(tabulate(
-            feature_data,
-            headers=['#', 'Feature Name', 'Importance', 'Contribution', 'Cumulative'],
-            tablefmt="grid",
-            maxcolwidths=[None, 50, None, None, None]
-        ))
+            feature_summary[f"Feature {i+1}"] = f"{feature} ({importance/total_importance:.2%})"
 
-        summary_data = [
-            ["Selected Features Count", len(selected_features)],
-            ["Total Features Count", len(x_train.columns)],
-            ["Selection Threshold", f"{threshold:.2%}"],
-            ["Achieved Importance", f"{(accumulated_importance/total_importance):.2%}"]
-        ]
+        self.progress.display_results_table(f"Feature Selection Summary (Threshold: {threshold:.2%})", feature_summary)
+
+        # Display selection summary
+        summary_data = {
+            "Selected Features Count": len(selected_features),
+            "Total Features Count": len(x_train.columns),
+            "Selection Threshold": f"{threshold:.2%}",
+            "Achieved Importance": f"{(accumulated_importance/total_importance):.2%}"
+        }
         
-        print("\nSelection Summary:")
-        print(tabulate(summary_data, headers=['Metric', 'Value'], tablefmt="grid"))
+        self.progress.display_results_table("Selection Summary", summary_data)
         
         return selected_features
 

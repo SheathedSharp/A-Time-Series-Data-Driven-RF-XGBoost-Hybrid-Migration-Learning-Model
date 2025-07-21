@@ -2,25 +2,27 @@ import random
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
+from utils.progress_display import create_progress_display
 
 
 def set_global_random_state(random_state=42):
     """
-    设置全局随机种子，确保实验的可重复性
+    Set global random seed to ensure experiment reproducibility
     
     Args:
-        random_state (int): 随机种子，默认为42
+        random_state (int): Random seed, default is 42
     """
     random.seed(random_state)
     np.random.seed(random_state)
     
-    # 设置pandas的随机种子（如果有的话）
+    # Set pandas random seed if available
     try:
         pd.set_option('mode.chained_assignment', None)
     except:
         pass
     
-    print(f"全局随机种子已设置为: {random_state}")
+    progress = create_progress_display()
+    progress.display_success(f"Global random seed set to: {random_state}")
 
 
 def get_feature_columns(feature_columns):
@@ -29,43 +31,38 @@ def get_feature_columns(feature_columns):
 
 
 def print_data_summary(data, title="Data Summary"):
-    """Print a summary of the dataset."""
-    print(f"\n{title}")
-    print("-" * 50)
-    print(f"数据形状: {data.shape}")
-    print(f"缺失值数量: {data.isnull().sum().sum()}")
-    if 'label' in data.columns:
-        print(f"正例数量: {data['label'].sum()}")
-        print(f"负例数量: {len(data) - data['label'].sum()}")
-        print(f"正例比例: {data['label'].mean():.4f}")
-    print("-" * 50)
+    """Print a summary of the dataset using progress display."""
+    progress = create_progress_display()
+    progress.display_data_summary(data, title)
 
 
 def validate_data_integrity(data, required_columns=None):
     """
-    验证数据完整性
+    Validate data integrity
     
     Args:
-        data (pd.DataFrame): 要验证的数据
-        required_columns (list): 必需的列名列表
+        data (pd.DataFrame): Data to validate
+        required_columns (list): List of required column names
         
     Returns:
-        bool: 数据是否有效
+        bool: Whether data is valid
     """
+    progress = create_progress_display()
+    
     if data is None or data.empty:
-        print("错误: 数据为空")
+        progress.display_error("Data is empty")
         return False
     
     if required_columns:
         missing_cols = [col for col in required_columns if col not in data.columns]
         if missing_cols:
-            print(f"错误: 缺少必需的列: {missing_cols}")
+            progress.display_error(f"Missing required columns: {missing_cols}")
             return False
     
-    # 检查是否有全部为NaN的列
+    # Check for columns with all NaN values
     nan_columns = [col for col in data.columns if data[col].isna().all()]
     if nan_columns:
-        print(f"警告: 发现全部为NaN的列: {nan_columns}")
+        progress.display_warning(f"Found columns with all NaN values: {nan_columns}")
     
     return True
 

@@ -1,7 +1,8 @@
-import pandas as pd
 import numpy as np
-from typing import List, Dict, Tuple
+import pandas as pd
+from typing import Dict, List, Tuple
 from tabulate import tabulate
+from utils.progress_display import create_progress_display
 
 
 class ContinuousBalancedSliceSampler:
@@ -43,7 +44,8 @@ class ContinuousBalancedSliceSampler:
         self.min_precursor_length = min_precursor_length
         self.max_precursor_length = max_precursor_length
         self.fault_statistics = {}
-        
+        self.progress = create_progress_display()
+    
     def analyze_fault_statistics(self, df: pd.DataFrame, fault_type_col: str = None) -> Dict:
         """Analyze fault duration statistics for adaptive precursor window calculation.
         
@@ -186,7 +188,7 @@ class ContinuousBalancedSliceSampler:
         })
         
         return sequences
-
+    
     def create_balanced_subsets(self, df: pd.DataFrame, 
                               fault_type_col: str = None) -> List[pd.DataFrame]:
         """Create balanced subsets using adaptive precursor windows.
@@ -271,79 +273,74 @@ class ContinuousBalancedSliceSampler:
         Returns:
             Tuple containing balanced training and test data
         """
-        # Combine features and labels
-        train_data = x_train.copy()
-        test_data = x_test.copy()
-        train_data['label'] = y_train
-        test_data['label'] = y_test
-        
-        # Create balanced subsets
-        train_subsets = self.create_balanced_subsets(train_data, fault_type_col)
-        test_subsets = self.create_balanced_subsets(test_data, fault_type_col)
-        
-        # Handle empty subsets
-        if not train_subsets:
-            print("Warning: No balanced training subsets created")
-            return x_train, x_test, y_train, y_test
-        
-        if not test_subsets:
-            print("Warning: No balanced test subsets created")
-            return x_train, x_test, y_train, y_test
-        
-        # Combine subsets and sort by index to maintain temporal order
-        balanced_train = pd.concat(train_subsets).sort_index()
-        balanced_test = pd.concat(test_subsets).sort_index()
-        
-        # Split features and labels
-        x_train_balanced = balanced_train.drop('label', axis=1)
-        y_train_balanced = balanced_train['label']
-        x_test_balanced = balanced_test.drop('label', axis=1)
-        y_test_balanced = balanced_test['label']
-        
-        # Print statistics
-        self._print_sampling_statistics()
-        self._print_combined_balance_stats(
-            train_original=y_train,
-            train_balanced=y_train_balanced,
-            test_original=y_test,
-            test_balanced=y_test_balanced
-        )
-        
+        with self.progress.sampling_status() as status:
+            status.update("Analyzing fault patterns...")
+            # Combine features and labels
+            train_data = x_train.copy()
+            test_data = x_test.copy()
+            train_data['label'] = y_train
+            test_data['label'] = y_test
+            
+            status.update("Creating balanced subsets...")
+            # Create balanced subsets
+            train_subsets = self.create_balanced_subsets(train_data, fault_type_col)
+            test_subsets = self.create_balanced_subsets(test_data, fault_type_col)
+            
+            # Handle empty subsets
+            if not train_subsets:
+                self.progress.display_warning("No balanced training subsets created")
+                return x_train, x_test, y_train, y_test
+            
+            if not test_subsets:
+                self.progress.display_warning("No balanced test subsets created")
+                return x_train, x_test, y_train, y_test
+            
+            status.update("Combining balanced subsets...")
+            # Combine subsets and sort by index to maintain temporal order
+            balanced_train = pd.concat(train_subsets).sort_index()
+            balanced_test = pd.concat(test_subsets).sort_index()
+            
+            # Split features and labels
+            x_train_balanced = balanced_train.drop('label', axis=1)
+            y_train_balanced = balanced_train['label']
+            x_test_balanced = balanced_test.drop('label', axis=1)
+            y_test_balanced = balanced_test['label']
+            
+            status.complete("Dataset balancing completed")
+            
+            # Display statistics
+            self._display_sampling_statistics()
+            self._display_combined_balance_stats(
+                train_original=y_train,
+                train_balanced=y_train_balanced,
+                test_original=y_test,
+                test_balanced=y_test_balanced
+            )
+            
         return x_train_balanced, x_test_balanced, y_train_balanced, y_test_balanced
     
-    def _print_sampling_statistics(self):
-        """Print fault statistics and precursor window calculations."""
+    def _display_sampling_statistics(self):
+        """Display fault statistics and precursor window calculations."""
         if not self.fault_statistics:
             return
         
-        print("\n" + "="*80)
-        print("CONTINUOUS BALANCED SLICE SAMPLING (CBSS) STATISTICS")
-        print("="*80)
-        print(f"Parameters: k={self.k}, α={self.alpha}, β={self.beta}")
-        print(f"Formula: T_precursor = k×μ + α×σ×√(N/(N+β))")
-        print("-"*80)
-        
-        headers = ["Fault Type", "Count", "Mean (s)", "Std (s)", "Precursor Window (s)"]
-        table_data = []
+        # Create statistics summary
+        stats_data = {
+            "Parameters": f"k={self.k}, α={self.alpha}, β={self.beta}",
+            "Formula": "T_precursor = k×μ + α×σ×√(N/(N+β))"
+        }
         
         for fault_type, stats in self.fault_statistics.items():
-            table_data.append([
-                fault_type,
-                stats['count'],
-                f"{stats['mean_duration']:.2f}",
-                f"{stats['std_duration']:.2f}",
-                stats['precursor_length']
-            ])
+            stats_data[f"{fault_type} - Count"] = stats['count']
+            stats_data[f"{fault_type} - Mean Duration"] = f"{stats['mean_duration']:.2f}s"
+            stats_data[f"{fault_type} - Std Duration"] = f"{stats['std_duration']:.2f}s"
+            stats_data[f"{fault_type} - Precursor Window"] = f"{stats['precursor_length']}s"
         
-        print(tabulate(table_data, headers=headers, tablefmt="grid"))
+        self.progress.display_results_table("CBSS Sampling Statistics", stats_data)
 
-    @staticmethod
-    def _print_combined_balance_stats(train_original, train_balanced,
+    def _display_combined_balance_stats(self, train_original, train_balanced,
                                       test_original, test_balanced):
-        """Print combined statistics about the balancing operation."""
-        headers = ["Metric", "Training Original", "Training Balanced",
-                   "Test Original", "Test Balanced"]
-
+        """Display combined statistics about the balancing operation."""
         # Calculate statistics
         train_orig_stats = {
             'total': len(train_original),
@@ -373,29 +370,24 @@ class ContinuousBalancedSliceSampler:
             'ratio': (~test_balanced).sum() / max(test_balanced.sum(), 1)
         }
 
-        # Create table data
-        table_data = [
-            ["Total Samples",
-             train_orig_stats['total'],
-             train_bal_stats['total'],
-             test_orig_stats['total'],
-             test_bal_stats['total']],
-            ["Positive Samples",
-             train_orig_stats['positive'],
-             train_bal_stats['positive'],
-             test_orig_stats['positive'],
-             test_bal_stats['positive']],
-            ["Negative Samples",
-             train_orig_stats['negative'],
-             train_bal_stats['negative'],
-             test_orig_stats['negative'],
-             test_bal_stats['negative']],
-            ["Neg/Pos Ratio",
-             f"{train_orig_stats['ratio']:.2f}",
-             f"{train_bal_stats['ratio']:.2f}",
-             f"{test_orig_stats['ratio']:.2f}",
-             f"{test_bal_stats['ratio']:.2f}"]
-        ]
+        # Create balance statistics
+        balance_data = {
+            "Training Original - Total": train_orig_stats['total'],
+            "Training Original - Positive": train_orig_stats['positive'],
+            "Training Original - Negative": train_orig_stats['negative'],
+            "Training Original - Neg/Pos Ratio": f"{train_orig_stats['ratio']:.2f}",
+            "Training Balanced - Total": train_bal_stats['total'],
+            "Training Balanced - Positive": train_bal_stats['positive'],
+            "Training Balanced - Negative": train_bal_stats['negative'],
+            "Training Balanced - Neg/Pos Ratio": f"{train_bal_stats['ratio']:.2f}",
+            "Test Original - Total": test_orig_stats['total'],
+            "Test Original - Positive": test_orig_stats['positive'],
+            "Test Original - Negative": test_orig_stats['negative'],
+            "Test Original - Neg/Pos Ratio": f"{test_orig_stats['ratio']:.2f}",
+            "Test Balanced - Total": test_bal_stats['total'],
+            "Test Balanced - Positive": test_bal_stats['positive'],
+            "Test Balanced - Negative": test_bal_stats['negative'],
+            "Test Balanced - Neg/Pos Ratio": f"{test_bal_stats['ratio']:.2f}"
+        }
 
-        print("\nDataset Balance Statistics:")
-        print(tabulate(table_data, headers=headers, tablefmt="grid"))
+        self.progress.display_results_table("Dataset Balance Statistics", balance_data)

@@ -8,52 +8,59 @@ from models.prediction.xgboost_predictor import XGBoostPredictor
 from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 from utils.model_evaluation import evaluate_model
+from utils.progress_display import create_progress_display
 from config import MODEL_DIR, FAULT_DESCRIPTIONS, get_feature_path
 import argparse
 
-def get_selected_features(production_line_code, fault_code, rf_threshold, rf_balance, random_state=42):
+def get_selected_features(production_line_code, fault_code, rf_threshold, rf_balance, random_state=42, status=None):
     """Get or generate selected features for the specified fault code."""
     features_path = get_feature_path(fault_code)
+    progress = create_progress_display()
     
     if os.path.exists(features_path):
-        print("\nLoading existing feature selection...")
+        if status:
+            status.update("Loading existing feature selection...")
+
         selected_features = pd.read_csv(features_path)['feature_name'].tolist()
     else:
-        print("\nNo existing feature selection found. Running feature selection...")
+        if status:
+            status.update("No existing feature selection found. Running feature selection...")
+
         try:
             cmd = [
                 'python', 'scripts/select_features.py',
                 '--production_line', str(production_line_code),
                 '--fault_code', str(fault_code),
                 '--threshold', str(rf_threshold),
-                '--random-state', str(random_state)  # 传递随机种子
+                '--random-state', str(random_state)  # Pass random seed
             ]
 
-            if not rf_balance:  # 如果不需要平衡，才添加 --no-balance 参数
+            if not rf_balance:  # Only add --no-balance parameter if balance is not needed
                 cmd.append('--no-balance')
 
+            if status:
+                status.update("Running Random Forest feature selection script...")
+            
             subprocess.run(
                 cmd,
                 check=True,
                 capture_output=True,
                 text=True
             )
-            print("Feature selection completed successfully!")
             
-            # 检查文件是否生成
+            # Check if file was generated
             if not os.path.exists(features_path):
                 raise FileNotFoundError("Feature selection file was not generated successfully")
                 
             selected_features = pd.read_csv(features_path)['feature_name'].tolist()
             
         except subprocess.CalledProcessError as e:
-            print("\nError during feature selection:")
-            print(f"Exit code: {e.returncode}")
-            print(f"Error output: {e.stderr}")
+            progress.display_error("Failed to perform feature selection", 
+                                f"Exit code: {e.returncode}\nError output: {e.stderr}")
             raise RuntimeError("Failed to perform feature selection")
             
         except Exception as e:
-            print(f"\nUnexpected error during feature selection: {str(e)}")
+            progress.display_error("Unexpected error during feature selection", str(e))
             raise
             
     return selected_features
@@ -63,14 +70,9 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
     
     # Set global random seeds for reproducibility
     np.random.seed(random_state)
-    
-    print(f"\n=== 训练配置 ===")
-    print(f"生产线: {production_line_code}")
-    print(f"故障代码: {fault_code}")
-    print(f"使用时序特征: {temporal}")
-    print(f"使用随机森林特征选择: {use_rf}")
-    print(f"随机种子: {random_state}")
-    print("=" * 20)
+
+    # Create progress display
+    progress = create_progress_display()
 
     # Load data
     data_loader = DataLoader()
@@ -87,34 +89,46 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
     x_test = test_data.drop('label', axis=1)
 
     if use_rf:
-        print("\nUsing Random Forest for feature selection...")
-        selected_features = get_selected_features(
-            production_line_code, 
-            fault_code, 
-            rf_threshold, 
-            rf_balance,
-            random_state
+        with progress.feature_selection_status() as status:
+            status.update("Using Random Forest for feature selection...")
+            
+            selected_features = get_selected_features(
+                production_line_code, 
+                fault_code, 
+                rf_threshold, 
+                rf_balance,
+                random_state,
+                status  
+            )
+            x_train = x_train[selected_features]
+            x_test = x_test[selected_features]
+            
+            
+            status.complete(f"Feature selection completed, using {len(selected_features)} features")
+
+    with progress.model_training_status() as status:
+        status.update("Initializing XGBoost predictor...")
+        predictor = XGBoostPredictor(random_state=random_state)
+
+        status.update("Training XGBoost model...")
+        model = predictor.train(
+            x_train=x_train,
+            y_train=y_train,
+            x_test=x_test,
+            y_test=y_test,
+            parameter_optimization=parameter_optimization
         )
-        x_train = x_train[selected_features]
-        x_test = x_test[selected_features]
-        print(f"特征选择完成，使用 {len(selected_features)} 个特征")
 
-    predictor = XGBoostPredictor(random_state=random_state)
+        status.update("Evaluating model performance...")
+        scaler = StandardScaler()
+        x_test_scaled = scaler.fit_transform(x_test)
+        evaluate_model(model, x_test_scaled, y_test)
 
-    model = predictor.train(
-        x_train=x_train,
-        y_train=y_train,
-        x_test=x_test,
-        y_test=y_test,
-        parameter_optimization=parameter_optimization
-    )
-
-    scaler = StandardScaler()
-    x_test_scaled = scaler.fit_transform(x_test)
-    evaluate_model(model, x_test_scaled, y_test)
-
-    model_path = os.path.join(MODEL_DIR, f'xgboost_production_line_{production_line_code}_fault_{fault_code}.pkl')
-    predictor.save_model(model_path)
+        status.update("Saving trained model...")
+        model_path = os.path.join(MODEL_DIR, f'xgboost_production_line_{production_line_code}_fault_{fault_code}.pkl')
+        predictor.save_model(model_path)
+        
+        status.complete("XGBoost model training completed successfully")
 
 if __name__ == "__main__":
     

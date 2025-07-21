@@ -1,29 +1,37 @@
-import random
 import numpy as np
-from tabulate import tabulate
-from sklearn.model_selection import RandomizedSearchCV
-from xgboost import XGBClassifier
-from sklearn.metrics import precision_score
 import pandas as pd
+import random
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import precision_score
+from xgboost import XGBClassifier
+from tabulate import tabulate
+from utils.progress_display import create_progress_display
+
 
 class ParameterOptimizer:
-    """Parameter optimization for machine learning models."""
+    """Advanced parameter optimizer with iterative refinement and analysis capabilities."""
     
     def __init__(self, initial_param_space, model_class=XGBClassifier, 
                  scoring_metrics=None, random_state=42):
-        self.random_state = random_state
+        """
+        Initialize parameter optimizer.
+        
+        Args:
+            initial_param_space (dict): Initial parameter space for optimization
+            model_class: Model class to optimize
+            scoring_metrics (dict): Scoring metrics for optimization
+            random_state (int): Random state for reproducibility
+        """
         self.initial_param_space = initial_param_space
         self.model_class = model_class
         self.scoring_metrics = scoring_metrics or {
             'precision': 'precision',
             'recall': 'recall',
-            'f1': 'f1',
-            'auc': 'roc_auc'
+            'f1': 'f1'
         }
-        
-        # Set random seeds for reproducibility
-        np.random.seed(random_state)
-        random.seed(random_state)
+        self.random_state = random_state
+        self.optimization_history = []
+        self.progress = create_progress_display()
 
     def optimize(self, x_train, y_train, x_test, y_test, 
                 precision_threshold=0.99, max_iterations=10, reset_interval=3,
@@ -39,31 +47,38 @@ class ParameterOptimizer:
         no_improvement_count = 0
         previous_precision = 0
 
-        for iteration in range(max_iterations):
-            if iteration % reset_interval == 0 and iteration > 0:
-                param_space = self.initial_param_space.copy()
-                self._print_iteration_info("Parameter space reset", iteration)
+        with self.progress.parameter_optimization_status() as status:
+            for iteration in range(max_iterations):
+                if iteration % reset_interval == 0 and iteration > 0:
+                    param_space = self.initial_param_space.copy()
+                    status.update(f"Iteration {iteration + 1}: Parameter space reset")
 
-            random_search = self._perform_random_search(x_train, y_train, param_space, iteration)
-            precision = self._evaluate_iteration(random_search, x_test, y_test, iteration)
+                status.update(f"Iteration {iteration + 1}: Performing random search...")
+                random_search = self._perform_random_search(x_train, y_train, param_space, iteration)
+                
+                status.update(f"Iteration {iteration + 1}: Evaluating results...")
+                precision = self._evaluate_iteration(random_search, x_test, y_test, iteration)
 
-            if precision > best_precision:
-                best_precision = precision
-                best_params = random_search.best_params_
-                if precision - previous_precision > min_improvement:
-                    no_improvement_count = 0
+                if precision > best_precision:
+                    best_precision = precision
+                    best_params = random_search.best_params_
+                    if precision - previous_precision > min_improvement:
+                        no_improvement_count = 0
+                    else:
+                        no_improvement_count += 1
                 else:
                     no_improvement_count += 1
-            else:
-                no_improvement_count += 1
-            
-            if no_improvement_count >= early_stopping_rounds:
-                print(f"Early stopping triggered after {iteration + 1} iterations")
-                break
-            
-            previous_precision = precision
+                
+                if no_improvement_count >= early_stopping_rounds:
+                    self.progress.display_warning(f"Early stopping triggered after {iteration + 1} iterations")
+                    break
+                
+                previous_precision = precision
 
-            param_space = self._update_param_space(param_space, random_search.best_params_, iteration)
+                status.update(f"Iteration {iteration + 1}: Updating parameter space...")
+                param_space = self._update_param_space(param_space, random_search.best_params_, iteration)
+
+            status.complete(f"Parameter optimization completed. Best precision: {best_precision:.4f}")
 
         return best_params
 
@@ -86,24 +101,22 @@ class ParameterOptimizer:
         random_search.fit(x_train, y_train)
         return random_search
 
-    @staticmethod
-    def _evaluate_iteration(random_search, x_test, y_test, iteration):
+    def _evaluate_iteration(self, random_search, x_test, y_test, iteration):
         """Enhanced evaluation with cross-validation analysis."""
         y_pred = random_search.predict(x_test)
         precision = precision_score(y_test, y_pred)
         
         cv_results = pd.DataFrame(random_search.cv_results_)
         
-        eval_data = [
-            ["Iteration", iteration + 1],
-            ["Test Precision", f"{precision:.4f}"],
-            ["CV Mean Precision", f"{cv_results['mean_test_precision'].mean():.4f}"],
-            ["CV Std Precision", f"{cv_results['std_test_precision'].mean():.4f}"],
-            ["Best CV Score", f"{random_search.best_score_:.4f}"]
-        ]
+        eval_data = {
+            "Iteration": iteration + 1,
+            "Test Precision": f"{precision:.4f}",
+            "CV Mean Precision": f"{cv_results['mean_test_precision'].mean():.4f}",
+            "CV Std Precision": f"{cv_results['std_test_precision'].mean():.4f}",
+            "Best CV Score": f"{random_search.best_score_:.4f}"
+        }
         
-        print("\nIteration Results:")
-        print(tabulate(eval_data, headers=["Metric", "Value"], tablefmt="grid"))
+        self.progress.display_results_table(f"Iteration {iteration + 1} Results", eval_data)
 
         return precision
 
@@ -200,20 +213,17 @@ class ParameterOptimizer:
             new_values.append(random.uniform(min(values), max(values)))
         return new_values
 
-    @staticmethod
-    def _print_iteration_info(message, iteration, params=None):
+    def _print_iteration_info(self, message, iteration, params=None):
         """Print formatted iteration information."""
-        headers = ["Metric", "Value"]
-        data = [["Iteration", iteration + 1], ["Message", message]]
+        data = {"Iteration": iteration + 1, "Message": message}
         if params:
-            for param, value in params.items():
-                data.append([param, value])
-        print(tabulate(data, headers=headers, tablefmt="grid"))
+            data.update(params)
+        self.progress.display_results_table("Iteration Information", data)
 
     def analyze_parameter_importance(self):
         """Analyze parameter importance based on optimization history."""
         if not hasattr(self, 'optimization_history'):
-            print("No optimization history available")
+            self.progress.display_warning("No optimization history available")
             return
         
         param_importance = {}
