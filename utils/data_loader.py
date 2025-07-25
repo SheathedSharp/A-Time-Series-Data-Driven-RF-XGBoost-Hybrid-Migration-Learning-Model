@@ -18,6 +18,7 @@ class DataLoader:
             
         data = pd.read_csv(file_path)
         data.fillna(0, inplace=True)
+        
         return data
 
     def prepare_data(self, production_line_code: int, temporal: bool = False):
@@ -38,11 +39,14 @@ class DataLoader:
 
         file_path = get_production_line_data_path(production_line_code, temporal=temporal)
 
-        # If temporal data is requested and not found, generate it
-        if temporal and not os.path.exists(file_path):
-            with self.progress.temporal_processing_status() as status:
-                status.update(f"Temporal data not found for production line {production_line_code}")
-                status.update("Generating temporal features...")
+        with self.progress.data_loading_status() as status:
+            status.update(f"Preparing data for production line {production_line_code}")
+            status.update(f"Temporal features enabled: {temporal}")
+            status.update(f"Target file path: {file_path}")
+
+            # If temporal data is requested and not found, generate it
+            if temporal and not os.path.exists(file_path):
+                status.update("Temporal data not found, generating temporal features...")
                 
                 try:
                     result = subprocess.run(
@@ -52,7 +56,7 @@ class DataLoader:
                         capture_output=True,
                         text=True
                     )
-                    status.complete("Temporal features generated successfully!")
+                    status.update("Temporal features generated successfully!")
 
                     if not os.path.exists(file_path):
                         raise FileNotFoundError(
@@ -69,5 +73,10 @@ class DataLoader:
                                              str(e))
                     raise
 
-        data = self.read_data(file_path)
+            status.update("Reading data file...")
+            data = self.read_data(file_path)
+            
+            status.update(f"Data loaded successfully - Shape: {data.shape}")
+            status.complete(f"Data preparation completed for production line {production_line_code}")
+
         return data

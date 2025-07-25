@@ -1,4 +1,5 @@
 from models.prediction.rf_selector import RFSelector
+from utils.progress_display import create_progress_display
 
 
 class FeatureSelector:
@@ -7,6 +8,7 @@ class FeatureSelector:
     def __init__(self, random_state=42):
         """Initialize feature selector with fixed random state for reproducibility."""
         self.random_state = random_state
+        self.progress = create_progress_display()
         self.rf_selector = RFSelector(random_state=random_state)
 
     def select_important_features(self, train_data, test_data, fault_code, threshold=0.9, model_exist=False):
@@ -27,23 +29,29 @@ class FeatureSelector:
             y_test_original: Original testing labels
         """
 
-        y_train = train_data['label']
-        x_train = train_data.drop('label', axis=1)
+        with self.progress.feature_selection_status() as status:
+            status.update("Initializing feature selector...")
 
-        y_test = test_data['label']
-        x_test = test_data.drop('label', axis=1)
+            y_train = train_data['label']
+            x_train = train_data.drop('label', axis=1)
 
+            y_test = test_data['label']
+            x_test = test_data.drop('label', axis=1)
 
-        # Load pre-selected features if model exists
-        if model_exist:
-            selected_features = self.rf_selector.load_important_features(fault_code)
-            x_train_selected = x_train[selected_features]
-            x_test_selected = x_test[selected_features]
-        else:
-            x_train_selected, x_test_selected = self.rf_selector.select_features(
-                x_train, x_test,
-                y_train, y_test,
-                fault_code, threshold
-            )
+            # Load pre-selected features if model exists
+            if model_exist:
+                status.update("Loading pre-selected features...")
+                selected_features = self.rf_selector.load_important_features(fault_code)
+                x_train_selected = x_train[selected_features]
+                x_test_selected = x_test[selected_features]
+                status.complete(f"Pre-selected features loaded. Using {len(selected_features)} features")
+            else:
+                status.update("Performing feature selection...")
+                x_train_selected, x_test_selected = self.rf_selector.select_features(
+                    x_train, x_test,
+                    y_train, y_test,
+                    fault_code, threshold
+                )
+                status.complete("Feature selection completed")
 
         return x_train_selected, x_test_selected

@@ -1,18 +1,19 @@
 import os
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from models.feature_engineering.feature_selector import FeatureSelector
 from models.prediction.lightgbm_predictor import LightGBMPredictor
 from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 from utils.model_evaluation import evaluate_model
 from utils.progress_display import create_progress_display
+from utils.feature_utils import apply_feature_selection
 from config import MODEL_DIR, FAULT_DESCRIPTIONS
 import argparse
 
 
 def lightgbm_predict(production_line_code, fault_code, temporal, use_rf=True, rf_threshold=0.9,
-                     rf_balance=True, parameter_optimization=False):
+                     rf_balance=True, parameter_optimization=False, random_state=42):
     """Train and evaluate LightGBM model with optional RF feature selection."""
 
     progress = create_progress_display()
@@ -32,22 +33,19 @@ def lightgbm_predict(production_line_code, fault_code, temporal, use_rf=True, rf
     x_test = test_data.drop('label', axis=1)
 
     if use_rf:
-        with progress.feature_selection_status() as status:
-            status.update("Using Random Forest for feature selection...")
-            feature_selector = FeatureSelector()
-            x_train, x_test = feature_selector.select_features(
-                x_train,
-                x_test,
-                production_line_code,
-                fault_code,
-                rf_threshold,
-                rf_balance
-            )
-            status.complete("Feature selection completed")
+        x_train, x_test = apply_feature_selection(
+            x_train,
+            x_test,
+            production_line_code,
+            fault_code,
+            rf_threshold,
+            rf_balance,
+            random_state
+        )
 
     with progress.model_training_status() as status:
         status.update("Initializing LightGBM predictor...")
-        predictor = LightGBMPredictor()
+        predictor = LightGBMPredictor(random_state=random_state)
 
         status.update("Training LightGBM model...")
         lightgbm_model = predictor.train(
@@ -59,8 +57,13 @@ def lightgbm_predict(production_line_code, fault_code, temporal, use_rf=True, rf
         )
 
         status.update("Evaluating model performance...")
-        scaler = StandardScaler()
-        x_test_scaled = scaler.fit_transform(x_test)
+        # Use the predictor's predict method which handles scaling properly
+        y_pred, y_proba = predictor.predict(x_test)
+        # For evaluation, we need to use the raw predictions
+        x_test_scaled = predictor.scaler.transform(x_test)
+        # Preserve feature names to avoid warnings
+        if hasattr(x_test, 'columns'):
+            x_test_scaled = pd.DataFrame(x_test_scaled, columns=x_test.columns, index=x_test.index)
         evaluate_model(lightgbm_model, x_test_scaled, y_test)
 
         status.update("Saving trained model...")
@@ -84,6 +87,7 @@ if __name__ == "__main__":
     parser.add_argument('--no-balance', action='store_false', dest='rf_balance', help='Do not balance dataset')
     parser.add_argument('--parameter-opt', action='store_true', dest='parameter_optimization',
                         help='Use parameter optimization')
+    parser.add_argument('--random-state', type=int, default=42, help='Random state for reproducibility')
 
     parser.set_defaults(temporal=True, use_rf=True, rf_balance=True, parameter_optimization=False)
 
@@ -97,5 +101,6 @@ if __name__ == "__main__":
         args.use_rf,
         args.rf_threshold,
         args.rf_balance,
-        args.parameter_optimization
+        args.parameter_optimization,
+        args.random_state
     )
