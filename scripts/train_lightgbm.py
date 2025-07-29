@@ -3,12 +3,12 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
 from models.prediction.lightgbm_predictor import LightGBMPredictor
+from models.feature_engineering.feature_selector import FeatureSelector
 from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 from utils.model_evaluation import evaluate_model
 from utils.progress_display import create_progress_display
-from utils.feature_utils import apply_feature_selection
-from config import MODEL_DIR, FAULT_DESCRIPTIONS
+from config import MODEL_DIR, FAULT_DESCRIPTIONS, get_feature_path
 import argparse
 
 
@@ -33,14 +33,14 @@ def lightgbm_predict(production_line_code, fault_code, temporal, use_rf=True, rf
     x_test = test_data.drop('label', axis=1)
 
     if use_rf:
-        x_train, x_test = apply_feature_selection(
-            x_train,
-            x_test,
-            production_line_code,
-            fault_code,
-            rf_threshold,
-            rf_balance,
-            random_state
+        # Check if pre-selected features exist
+        features_path = get_feature_path(fault_code)
+        model_exist = os.path.exists(features_path)
+
+        # Use FeatureSelector to select features
+        feature_selector = FeatureSelector(random_state=random_state)
+        x_train, x_test = feature_selector.select_important_features(
+            train_data, test_data, fault_code, rf_threshold, model_exist=model_exist
         )
 
     with progress.model_training_status() as status:
