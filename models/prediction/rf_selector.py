@@ -157,7 +157,7 @@ class RFSelector:
     @staticmethod
     def load_important_features(fault_code):
         """Load pre-selected features from CSV file."""
-        selected_features = pd.read_csv(f'./feature/{fault_code}_selected_features.csv')
+        selected_features = pd.read_csv(f'./data/selected_features/{fault_code}_selected_features.csv')
         return selected_features['feature_name'].tolist()
 
     def _update_param_space(self, param_space, best_params, iteration):

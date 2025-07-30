@@ -28,5 +28,6 @@ old_files/
 *.txt
 
 *.pkl
+*.pth
 
 fault_analysis_results/
