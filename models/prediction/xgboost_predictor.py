@@ -21,12 +21,17 @@ class XGBoostPredictor:
         # Set random seeds for reproducibility
         np.random.seed(random_state)
         
+        # Safe parameter space with explicit bounds to prevent out-of-range errors
         self.initial_param_space = {
-            'learning_rate': [0.01, 0.05, 0.1],
+            'learning_rate': [0.01, 0.05, 0.1, 0.15, 0.2],
             'n_estimators': [100, 200, 300, 400, 500],
-            'subsample': [0.5, 0.7, 0.8, 1.0],
-            'colsample_bytree': [0.5, 0.7, 0.8, 1.0],
-            'max_depth': [5, 7, 10, 15],
+            'subsample': [0.5, 0.7, 0.8, 0.9],  # Removed 1.0 to prevent expansion errors
+            'colsample_bytree': [0.5, 0.7, 0.8, 0.9],  # Removed 1.0 to prevent expansion errors
+            'max_depth': [3, 5, 7, 10, 15],
+            'min_child_weight': [1, 3, 5],
+            'gamma': [0, 0.1, 0.2],
+            'reg_alpha': [0, 0.1, 0.5],
+            'reg_lambda': [0.1, 1.0, 10.0],
             'random_state': [random_state]  # Ensure XGBoost uses fixed random state
         }
         self.parameter_optimizer = ParameterOptimizer(
