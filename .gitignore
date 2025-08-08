@@ -18,7 +18,9 @@ data/M104.csv
 *.xlsx
 
 experiments/pic/
+experiments/*.log
 
+data/selected_features/*
 
 old_files/
 
@@ -31,3 +33,5 @@ old_files/
 *.pth
 
 fault_analysis_results/
+
+*.png

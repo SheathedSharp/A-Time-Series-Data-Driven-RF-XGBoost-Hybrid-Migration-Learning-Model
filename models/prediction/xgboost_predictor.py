@@ -77,7 +77,7 @@ class XGBoostPredictor:
             param_distributions=param_space,
             n_iter=n_iter,
             cv=cv,
-            scoring='precision',
+            scoring='f1',  # F1 score is better for imbalanced data than precision
             random_state=self.random_state,  # Fixed random state for reproducible search
             n_jobs=-1,
             verbose=0

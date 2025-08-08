@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 from tabulate import tabulate
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 from config import FEATURE_DIR
 from utils.model_evaluation import evaluate_model
@@ -23,13 +22,6 @@ class RFSelector:
         np.random.seed(random_state)
         random.seed(random_state)
         
-        self.initial_param_space = {
-            'n_estimators': [50, 100, 200, 300],
-            'max_depth': [5, 10, 15, 20, None],
-            'min_samples_split': [2, 5, 10],
-            'min_samples_leaf': [1, 2, 4],
-            'max_features': ['sqrt', 'log2', None]
-        }
 
     def select_features(self, x_train, x_test, y_train, y_test, fault_code, threshold):
         """
@@ -61,44 +53,25 @@ class RFSelector:
                 x_test[selected_features])
 
     def _train_optimized_model(self, x_train, y_train, x_test, y_test):
-        """Train RF model with parameter optimization."""
+        """Train RF model with reasonable parameters for feature selection."""
         start_time = time.time()
         
-        param_space = self.initial_param_space.copy()
-        best_precision = 0
-        precision_threshold = 0.1
-
-        for iteration in range(10):
-            # Use fixed random state for each iteration based on iteration number
-            iteration_random_state = self.random_state + iteration
-            
-            random_search = RandomizedSearchCV(
-                estimator=RandomForestClassifier(random_state=self.random_state),
-                param_distributions=param_space,
-                n_iter=1,
-                scoring={'precision': 'precision', 'auc': 'roc_auc'},
-                cv=2,
-                verbose=0,
-                n_jobs=-1,
-                refit='precision',
-                random_state=iteration_random_state  # Fixed random state for reproducible parameter search
-            )
-
-            random_search.fit(x_train, y_train)
-            y_pred = random_search.predict(x_test)
-            precision = precision_score(y_test, y_pred, zero_division=1)
-
-            if precision > best_precision:
-                best_precision = precision
-                self.best_model = random_search.best_estimator_
-
-            if precision >= precision_threshold:
-                break
-
-            param_space = self._update_param_space(param_space, random_search.best_params_, iteration)
-
+        params = {
+            'n_estimators': 100,      # Good balance of accuracy and speed
+            'max_depth': 10,          # Prevent overfitting while capturing patterns
+            'min_samples_split': 5,   # Conservative splitting
+            'min_samples_leaf': 2,    # Allow detailed splits
+            'max_features': 'sqrt',   # Standard recommendation for classification
+            'random_state': self.random_state,
+            'n_jobs': -1              # Use all available cores
+        }
+        
+        # Train model with fixed parameters
+        self.best_model = RandomForestClassifier(**params)
+        self.best_model.fit(x_train, y_train)
+        
         training_time = time.time() - start_time
-        self._print_training_summary(training_time, random_search.best_params_)
+        self._print_training_summary(training_time, params)
         evaluate_model(self.best_model, x_test, y_test)
 
     def _print_training_summary(self, training_time, best_params):
@@ -159,50 +132,3 @@ class RFSelector:
         """Load pre-selected features from CSV file."""
         selected_features = pd.read_csv(f'./data/selected_features/{fault_code}_selected_features.csv')
         return selected_features['feature_name'].tolist()
-
-    def _update_param_space(self, param_space, best_params, iteration):
-        """Update parameter space based on best parameters with fixed randomness."""
-        # Use iteration-based seed for reproducible parameter space updates
-        update_random_state = np.random.RandomState(self.random_state + iteration + 100)
-        
-        new_param_space = {}
-        for param, values in param_space.items():
-            if param in best_params:
-                best_value = best_params[param]
-                if isinstance(values, list) and best_value in values:
-                    index = values.index(best_value)
-                    new_values = self._get_new_values(values, index)
-                else:
-                    new_values = values
-
-                if isinstance(values[0], int):
-                    new_values = [int(v) for v in new_values if isinstance(v, (int, float))]
-
-                # Use fixed probability with reproducible random state
-                if update_random_state.random() < 0.2:
-                    new_values = self._add_random_value(values, new_values, update_random_state)
-            else:
-                new_values = values
-
-            new_param_space[param] = new_values
-
-        return new_param_space
-
-    @staticmethod
-    def _get_new_values(values, index):
-        """Get new parameter values based on current best value."""
-        if index == 0:
-            return [values[0], values[1]]
-        elif index == len(values) - 1:
-            return [values[-2], values[-1]]
-        else:
-            return [values[index - 1], values[index], values[index + 1]]
-
-    @staticmethod
-    def _add_random_value(values, new_values, random_state):
-        """Add random value to parameter space with fixed random state."""
-        if isinstance(values[0], int):
-            new_values.append(random_state.randint(min(values), max(values) + 1))
-        elif isinstance(values[0], float):
-            new_values.append(random_state.uniform(min(values), max(values)))
-        return new_values
