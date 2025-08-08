@@ -57,6 +57,12 @@ class XGBoostPredictor:
         # Ensure random_state is always set in final model
         if 'random_state' not in best_params:
             best_params['random_state'] = self.random_state
+        
+        # Calculate scale_pos_weight to further handle class imbalance
+        neg_count = (y_train == 0).sum()
+        pos_count = (y_train == 1).sum()
+        scale_pos_weight = neg_count / pos_count if pos_count > 0 else 1
+        best_params['scale_pos_weight'] = scale_pos_weight
             
         self.model = XGBClassifier(**best_params)
         self.model.fit(x_train_scaled, y_train)
@@ -77,8 +83,8 @@ class XGBoostPredictor:
             param_distributions=param_space,
             n_iter=n_iter,
             cv=cv,
-            scoring='f1',  # F1 score is better for imbalanced data than precision
-            random_state=self.random_state,  # Fixed random state for reproducible search
+            scoring='f1', 
+            random_state=self.random_state,
             n_jobs=-1,
             verbose=0
         )

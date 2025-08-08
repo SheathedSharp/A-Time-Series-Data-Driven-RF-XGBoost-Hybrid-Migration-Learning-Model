@@ -54,11 +54,14 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
     y_test = test_data['label']
     x_test = test_data.drop('label', axis=1)
 
-    # Apply CBSS balancing if requested
+    # Apply CBSS balancing if requested  
     if use_balance:
         sampler = ContinuousBalancedSliceSampler(
-            k=4.0, alpha=1.96, beta=10.0,
-            min_precursor_length=60, max_precursor_length=1800
+            k=4.0, 
+            alpha=1.96, 
+            beta=10.0,
+            min_precursor_length=60,
+            max_precursor_length=1800
         )
         x_train_balanced, x_test_balanced, y_train_balanced, y_test_balanced = sampler.balance_dataset(
             x_train, x_test, y_train, y_test

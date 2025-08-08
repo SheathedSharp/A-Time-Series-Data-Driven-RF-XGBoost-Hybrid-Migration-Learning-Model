@@ -1,15 +1,28 @@
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
+import numpy as np
 from tabulate import tabulate
 from utils.progress_display import create_progress_display
 
 
-def evaluate_model(model, x_test, y_test):
-    """Evaluate model performance using progress display."""
+def evaluate_model(model, x_test, y_test, optimize_threshold=True):
+    """Evaluate model performance with optional threshold optimization."""
     progress = create_progress_display()
     
     with progress.model_evaluation_status() as status:
         status.update("Making predictions...")
-        y_pred = model.predict(x_test)
+        
+        if optimize_threshold and hasattr(model, 'predict_proba'):
+            # Get prediction probabilities for threshold optimization
+            y_pred_proba = model.predict_proba(x_test)[:, 1]
+            
+            status.update("Optimizing decision threshold...")
+            best_threshold, best_f1 = find_optimal_threshold(y_test, y_pred_proba)
+            y_pred = (y_pred_proba >= best_threshold).astype(int)
+            
+            threshold_info = f" (optimized threshold: {best_threshold:.3f})"
+        else:
+            y_pred = model.predict(x_test)
+            threshold_info = " (default threshold: 0.500)"
 
         # Basic metrics
         status.update("Calculating performance metrics...")
@@ -65,4 +78,27 @@ def evaluate_model(model, x_test, y_test):
                 detailed_report[f"{avg_name} - Support"] = row[4]
 
         progress.display_results_table("Detailed Classification Report", detailed_report)
-        status.complete("Model evaluation completed")
+        status.complete(f"Model evaluation completed{threshold_info}")
+
+
+def find_optimal_threshold(y_true, y_pred_proba, metric='f1'):
+    """Find optimal threshold that maximizes the specified metric."""
+    thresholds = np.arange(0.1, 0.9, 0.01)  # Search from 0.1 to 0.9
+    best_score = 0
+    best_threshold = 0.5
+    
+    for threshold in thresholds:
+        y_pred_thresh = (y_pred_proba >= threshold).astype(int)
+        
+        if metric == 'f1':
+            score = f1_score(y_true, y_pred_thresh, zero_division=0)
+        elif metric == 'recall':
+            score = recall_score(y_true, y_pred_thresh, zero_division=0)
+        else:
+            score = f1_score(y_true, y_pred_thresh, zero_division=0)
+        
+        if score > best_score:
+            best_score = score
+            best_threshold = threshold
+    
+    return best_threshold, best_score
