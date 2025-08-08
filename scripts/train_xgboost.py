@@ -1,15 +1,12 @@
 import os
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
 from models.prediction.xgboost_predictor import XGBoostPredictor
 from models.feature_engineering.feature_selector import FeatureSelector
 from models.sampling.balanced_sampler import ContinuousBalancedSliceSampler
 from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
-from utils.model_evaluation import evaluate_model
-from utils.progress_display import create_progress_display
 from config import MODEL_DIR, FAULT_DESCRIPTIONS, get_feature_path
 import argparse
 
@@ -36,9 +33,6 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
     
     # Set global random seeds for reproducibility
     np.random.seed(random_state)
-
-    # Create progress display
-    progress = create_progress_display()
 
     # Load data
     data_loader = DataLoader()
@@ -92,29 +86,21 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
     # Final datasets for XGBoost training
     x_train_final, x_test_final, y_train_final, y_test_final = x_train_work, x_test_work, y_train_work, y_test_work
 
-    with progress.model_training_status() as status:
-        status.update("Initializing XGBoost predictor...")
-        predictor = XGBoostPredictor(random_state=random_state)
+    # Initialize XGBoost predictor with integrated progress display
+    predictor = XGBoostPredictor(random_state=random_state, show_progress=True)
 
-        status.update("Training XGBoost model...")
-        model = predictor.train(
-            x_train=x_train_final,
-            y_train=y_train_final,
-            x_test=x_test_final,
-            y_test=y_test_final,
-            parameter_optimization=parameter_optimization
-        )
+    # Train the model (progress is handled internally)
+    model = predictor.train(
+        x_train=x_train_final,
+        y_train=y_train_final,
+        x_test=x_test_final,
+        y_test=y_test_final,
+        parameter_optimization=parameter_optimization
+    )
 
-        status.update("Evaluating model performance...")
-        scaler = StandardScaler()
-        x_test_scaled = scaler.fit_transform(x_test_final)
-        evaluate_model(model, x_test_scaled, y_test_final)
-
-        status.update("Saving trained model...")
-        model_path = os.path.join(MODEL_DIR, f'xgboost_production_line_{production_line_code}_fault_{fault_code}.pkl')
-        predictor.save_model(model_path)
-        
-        status.complete("XGBoost model training completed successfully")
+    # Evaluate and save the model (progress is handled internally)
+    model_path = os.path.join(MODEL_DIR, f'xgboost_production_line_{production_line_code}_fault_{fault_code}.pkl')
+    predictor.evaluate_and_save(x_test_final, y_test_final, model_path)
 
 if __name__ == "__main__":
     
