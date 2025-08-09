@@ -40,7 +40,7 @@ def run_xgboost_experiments_with_variance(production_line=1, fault_code=1001):
     
     # Create timestamp for this experiment batch
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    experiment_log = f"experiments/xgboost_varied_batch_{production_line}_{fault_code}_{timestamp}.log"
+    experiment_log = f"experiments/result/xgboost_varied_batch_{production_line}_{fault_code}_{timestamp}.log"
     
     successful_runs = 0
     failed_runs = 0
