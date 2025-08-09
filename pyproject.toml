@@ -50,9 +50,6 @@ jupyter = [
     "jupyterlab>=3.0.0",
 ]
 
-[project.scripts]
-fault-analysis = "scripts.fault_analysis:main"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
