@@ -85,14 +85,14 @@ class LSTMPredictor:
         if torch.cuda.is_available():
             torch.cuda.manual_seed(random_state)
         
-        # Fixed parameters (no optimization)
+        # Fixed parameters (no optimization, fast training)
         self.default_params = {
-            'lstm_units': 64,
+            'lstm_units': 32,
             'dropout_rate': 0.2,
-            'learning_rate': 0.001,
-            'batch_size': 32,
-            'epochs': 50,
-            'dense_units': 32,
+            'learning_rate': 0.01,
+            'batch_size': 128,
+            'epochs': 20,
+            'dense_units': 16,
             'lstm_layers': 1
         }
 
@@ -121,7 +121,7 @@ class LSTMPredictor:
         return model
 
     def _train_model(self, model, train_loader, val_loader, learning_rate=0.001, 
-                     epochs=50, patience=10):
+                     epochs=50, patience=5):
         """Train the LSTM model."""
         criterion = nn.BCELoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
