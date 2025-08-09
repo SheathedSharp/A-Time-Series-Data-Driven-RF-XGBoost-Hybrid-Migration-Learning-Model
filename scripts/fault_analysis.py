@@ -155,7 +155,7 @@ class FaultAnalyzer:
         
         return pd.DataFrame(summary_data)
     
-    def save_detailed_report(self, fault_events: Dict[str, List[Dict]], output_dir: str = "fault_analysis_results"):
+    def save_detailed_report(self, fault_events: Dict[str, List[Dict]], output_dir: str = "experiments/results/fault_analysis_results"):
         """保存详细的故障分析报告"""
         output_path = Path(output_dir)
         output_path.mkdir(exist_ok=True)
@@ -175,7 +175,7 @@ class FaultAnalyzer:
         print(f"\n详细报告已保存到: {output_path}")
         return summary_df
     
-    def create_visualizations(self, fault_events: Dict[str, List[Dict]], output_dir: str = "fault_analysis_results"):
+    def create_visualizations(self, fault_events: Dict[str, List[Dict]], output_dir: str = "experiments/results/fault_analysis_results"):
         """创建可视化图表"""
         output_path = Path(output_dir)
         output_path.mkdir(exist_ok=True)
@@ -284,8 +284,8 @@ def main():
     parser = argparse.ArgumentParser(description='故障数据分析工具')
     parser.add_argument('--input', '-i', default='data/raw/production_line_1.csv',
                        help='输入CSV文件路径 (默认: data/raw/production_line_1.csv)')
-    parser.add_argument('--output', '-o', default='fault_analysis_results',
-                       help='输出目录 (默认: fault_analysis_results)')
+    parser.add_argument('--output', '-o', default='experiments/results/fault_analysis_results',
+                       help='输出目录 (默认: experiments/results/fault_analysis_results)')
     parser.add_argument('--focus-1001', action='store_true',
                        help='重点分析1001故障')
     

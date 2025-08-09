@@ -3,11 +3,9 @@ import os
 
 import numpy as np
 import joblib
-from tabulate import tabulate
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import RandomizedSearchCV
 from xgboost import XGBClassifier
-from sklearn.metrics import precision_score
 from .parameter_optimizer import ParameterOptimizer
 from utils.progress_display import create_progress_display
 from utils.model_evaluation import evaluate_model
