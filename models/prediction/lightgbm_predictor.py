@@ -5,7 +5,7 @@ from lightgbm import LGBMClassifier
 from utils.progress_display import create_progress_display
 from utils.model_evaluation import evaluate_model
 
-class LightGBMBaselinePredictor:
+class LightGBMPredictor:
     """LightGBM BASELINE predictor for fair comparison with hybrid RF-XGBoost method.
     
     This predictor uses raw data without any preprocessing (no temporal features,

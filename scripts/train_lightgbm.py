@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from models.prediction.lightgbm_predictor import LightGBMBaselinePredictor
+from models.prediction.lightgbm_predictor import LightGBMPredictor
 from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 from config import MODEL_DIR, FAULT_DESCRIPTIONS
@@ -43,7 +43,7 @@ def lightgbm_predict(production_line_code, fault_code, random_state=42):
     x_test = test_data.drop('label', axis=1)
 
     # Initialize LightGBM baseline predictor with integrated progress display
-    predictor = LightGBMBaselinePredictor(random_state=random_state, show_progress=True)
+    predictor = LightGBMPredictor(random_state=random_state, show_progress=True)
 
     # Train the baseline model
     model = predictor.train(

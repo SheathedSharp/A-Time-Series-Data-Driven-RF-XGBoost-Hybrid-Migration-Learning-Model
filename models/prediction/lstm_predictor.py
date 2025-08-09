@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import ParameterSampler
 from sklearn.metrics import precision_score
-from .parameter_optimizer import ParameterOptimizer
+from utils.progress_display import create_progress_display
 
 
 class TimeSeriesDataset(Dataset):
@@ -62,15 +62,22 @@ class LSTMModel(nn.Module):
 
 
 class LSTMPredictor:
-    """LSTM based predictor with hyperparameter optimization for time series fault prediction."""
+    """LSTM predictor for fault prediction.
+    
+    This predictor uses raw data without any preprocessing (no temporal features,
+    no CBSS sampling, no RF feature selection).
+    Uses simple default parameters without optimization.
+    """
 
-    def __init__(self, random_state=42, sequence_length=10):
+    def __init__(self, random_state=42, sequence_length=10, show_progress=True):
         """Initialize LSTM predictor with default parameters and fixed random state."""
         self.random_state = random_state
         self.sequence_length = sequence_length
         self.model = None
         self.scaler = MinMaxScaler()
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.show_progress = show_progress
+        self.progress = create_progress_display() if show_progress else None
         
         # Set random seeds for reproducibility
         np.random.seed(random_state)
@@ -78,14 +85,15 @@ class LSTMPredictor:
         if torch.cuda.is_available():
             torch.cuda.manual_seed(random_state)
         
-        self.initial_param_space = {
-            'lstm_units': [32, 64],
-            'dropout_rate': [0.1, 0.2, 0.3],
-            'learning_rate': [0.001, 0.01],
-            'batch_size': [32, 64],
-            'epochs': [20, 50],
-            'dense_units': [16, 32],
-            'lstm_layers': [1, 2]
+        # Fixed parameters (no optimization)
+        self.default_params = {
+            'lstm_units': 64,
+            'dropout_rate': 0.2,
+            'learning_rate': 0.001,
+            'batch_size': 32,
+            'epochs': 50,
+            'dense_units': 32,
+            'lstm_layers': 1
         }
 
     def _create_sequences(self, data, target):
@@ -100,21 +108,20 @@ class LSTMPredictor:
             
         return np.array(sequences), np.array(targets)
 
-    def _build_model(self, input_size, lstm_units=64, dropout_rate=0.2, 
-                     dense_units=32, lstm_layers=1, **kwargs):
-        """Build LSTM model architecture."""
+    def _build_model(self, input_size):
+        """Build LSTM model architecture with default parameters."""
         model = LSTMModel(
             input_size=input_size,
-            lstm_units=lstm_units,
-            lstm_layers=lstm_layers,
-            dropout_rate=dropout_rate,
-            dense_units=dense_units
+            lstm_units=self.default_params['lstm_units'],
+            lstm_layers=self.default_params['lstm_layers'],
+            dropout_rate=self.default_params['dropout_rate'],
+            dense_units=self.default_params['dense_units']
         ).to(self.device)
         
         return model
 
     def _train_model(self, model, train_loader, val_loader, learning_rate=0.001, 
-                     epochs=100, patience=10):
+                     epochs=50, patience=10):
         """Train the LSTM model."""
         criterion = nn.BCELoss()
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -166,8 +173,66 @@ class LSTMPredictor:
         
         return model
 
-    def train(self, x_train, x_test, y_train, y_test, parameter_optimization=False):
-        """Train the LSTM model."""
+    def train(self, x_train, x_test, y_train, y_test):
+        """Train the LSTM model with integrated progress display.
+        
+        This model uses raw data without any preprocessing.
+        """
+        if self.show_progress:
+            with self.progress.model_training_status() as status:
+                return self._train_with_progress(x_train, x_test, y_train, y_test, status)
+        else:
+            return self._train_without_progress(x_train, x_test, y_train, y_test)
+    
+    def _train_with_progress(self, x_train, x_test, y_train, y_test, status):
+        """Internal training method with progress updates."""
+        status.update("Initializing LSTM training...")
+        
+        # Reset random seed before training
+        np.random.seed(self.random_state)
+        torch.manual_seed(self.random_state)
+        
+        status.update("Scaling raw features...")
+        x_train_scaled = self.scaler.fit_transform(x_train)
+        x_test_scaled = self.scaler.transform(x_test)
+        
+        status.update("Creating time sequences from raw data...")
+        x_train_seq, y_train_seq = self._create_sequences(x_train_scaled, y_train.values)
+        x_test_seq, y_test_seq = self._create_sequences(x_test_scaled, y_test.values)
+        
+        status.update("Building LSTM model...")
+        input_size = x_train_seq.shape[2]
+        self.model = self._build_model(input_size)
+        
+        status.update("Preparing data loaders...")
+        train_dataset = TimeSeriesDataset(x_train_seq, y_train_seq)
+        val_dataset = TimeSeriesDataset(x_test_seq, y_test_seq)
+        
+        train_loader = DataLoader(
+            train_dataset, 
+            batch_size=self.default_params['batch_size'], 
+            shuffle=True
+        )
+        val_loader = DataLoader(
+            val_dataset, 
+            batch_size=self.default_params['batch_size'], 
+            shuffle=False
+        )
+        
+        status.update("Training LSTM model...")
+        self.model = self._train_model(
+            self.model, 
+            train_loader, 
+            val_loader,
+            learning_rate=self.default_params['learning_rate'],
+            epochs=self.default_params['epochs']
+        )
+        
+        status.complete("LSTM model training completed successfully")
+        return self.model
+    
+    def _train_without_progress(self, x_train, x_test, y_train, y_test):
+        """Internal training method without progress updates."""
         # Reset random seed before training
         np.random.seed(self.random_state)
         torch.manual_seed(self.random_state)
@@ -180,15 +245,9 @@ class LSTMPredictor:
         x_train_seq, y_train_seq = self._create_sequences(x_train_scaled, y_train.values)
         x_test_seq, y_test_seq = self._create_sequences(x_test_scaled, y_test.values)
         
-        if parameter_optimization:
-            best_params = self._optimize_parameters(x_train_seq, y_train_seq, 
-                                                   x_test_seq, y_test_seq)
-        else:
-            best_params = self._simple_parameter_search(x_train_seq, y_train_seq)
-
-        # Build and train final model
+        # Build model
         input_size = x_train_seq.shape[2]
-        self.model = self._build_model(input_size, **best_params)
+        self.model = self._build_model(input_size)
         
         # Create data loaders
         train_dataset = TimeSeriesDataset(x_train_seq, y_train_seq)
@@ -196,12 +255,12 @@ class LSTMPredictor:
         
         train_loader = DataLoader(
             train_dataset, 
-            batch_size=best_params.get('batch_size', 32), 
+            batch_size=self.default_params['batch_size'], 
             shuffle=True
         )
         val_loader = DataLoader(
             val_dataset, 
-            batch_size=best_params.get('batch_size', 32), 
+            batch_size=self.default_params['batch_size'], 
             shuffle=False
         )
         
@@ -210,94 +269,11 @@ class LSTMPredictor:
             self.model, 
             train_loader, 
             val_loader,
-            learning_rate=best_params.get('learning_rate', 0.001),
-            epochs=best_params.get('epochs', 100)
+            learning_rate=self.default_params['learning_rate'],
+            epochs=self.default_params['epochs']
         )
         
         return self.model
-
-    def _simple_parameter_search(self, x_train, y_train, n_iter=3):
-        """Perform simple random parameter search."""
-        param_sampler = ParameterSampler(self.initial_param_space, 
-                                       n_iter=n_iter, 
-                                       random_state=self.random_state)
-        
-        best_score = 0
-        best_params = None
-        
-        for params in param_sampler:
-            try:
-                # Create validation split
-                val_size = int(0.2 * len(x_train))
-                x_val = x_train[-val_size:]
-                y_val = y_train[-val_size:]
-                x_train_fold = x_train[:-val_size]
-                y_train_fold = y_train[:-val_size]
-                
-                # Build model
-                input_size = x_train.shape[2]
-                model = self._build_model(input_size, **params)
-                
-                # Create data loaders
-                train_dataset = TimeSeriesDataset(x_train_fold, y_train_fold)
-                val_dataset = TimeSeriesDataset(x_val, y_val)
-                
-                train_loader = DataLoader(
-                    train_dataset, 
-                    batch_size=params.get('batch_size', 32), 
-                    shuffle=True
-                )
-                val_loader = DataLoader(
-                    val_dataset, 
-                    batch_size=params.get('batch_size', 32), 
-                    shuffle=False
-                )
-                
-                # Train model with reduced epochs for search
-                model = self._train_model(
-                    model, 
-                    train_loader, 
-                    val_loader,
-                    learning_rate=params.get('learning_rate', 0.001),
-                    epochs=min(params.get('epochs', 20), 15),
-                    patience=3
-                )
-                
-                # Evaluate
-                model.eval()
-                y_pred_list = []
-                with torch.no_grad():
-                    for batch_x, _ in val_loader:
-                        batch_x = batch_x.to(self.device)
-                        outputs = model(batch_x).squeeze()
-                        y_pred_list.extend((outputs > 0.5).cpu().numpy())
-                
-                score = precision_score(y_val, y_pred_list, zero_division=0)
-                
-                if score > best_score:
-                    best_score = score
-                    best_params = params
-                    
-            except Exception:
-                continue
-        
-        # Return default params if no valid params found
-        if best_params is None:
-            best_params = {
-                'lstm_units': 32,
-                'dropout_rate': 0.2,
-                'learning_rate': 0.001,
-                'batch_size': 32,
-                'epochs': 20,
-                'dense_units': 16,
-                'lstm_layers': 1
-            }
-        
-        return best_params
-
-    def _optimize_parameters(self, x_train, y_train, x_test, y_test):
-        """Advanced parameter optimization using validation set."""
-        return self._simple_parameter_search(x_train, y_train, n_iter=5)
 
     def predict(self, x):
         """Make predictions using the trained model."""
@@ -346,6 +322,16 @@ class LSTMPredictor:
         if self.model is None:
             raise ValueError("No model to save")
 
+        if self.show_progress and self.progress:
+            with self.progress.model_training_status() as status:
+                status.update("Saving trained model...")
+                self._save_model_files(model_path)
+                status.complete("Model saved successfully")
+        else:
+            self._save_model_files(model_path)
+    
+    def _save_model_files(self, model_path):
+        """Internal method to save model files."""
         # Save PyTorch model
         torch.save(self.model.state_dict(), model_path.replace('.pkl', '.pth'))
         
@@ -354,6 +340,7 @@ class LSTMPredictor:
             'scaler': self.scaler,
             'sequence_length': self.sequence_length,
             'random_state': self.random_state,
+            'default_params': self.default_params,
             'input_size': self.model.lstm.input_size,
             'lstm_units': self.model.lstm.hidden_size,
             'lstm_layers': self.model.lstm.num_layers,
@@ -369,6 +356,7 @@ class LSTMPredictor:
         self.scaler = model_data['scaler']
         self.sequence_length = model_data['sequence_length']
         self.random_state = model_data['random_state']
+        self.default_params = model_data['default_params']
         
         # Rebuild model
         self.model = LSTMModel(
@@ -383,41 +371,4 @@ class LSTMPredictor:
         self.model.load_state_dict(torch.load(model_path.replace('.pkl', '.pth'), 
                                              map_location=self.device))
         
-        return self.model
-
-    def transfer_learning(self, target_x_train, target_y_train):
-        """Apply transfer learning to adapt model to new data."""
-        if self.model is None:
-            raise ValueError("No source model available for transfer learning")
-
-        # Prepare target data
-        target_x_scaled = self.scaler.transform(target_x_train)
-        target_x_seq, target_y_seq = self._create_sequences(
-            target_x_scaled, target_y_train.values
-        )
-
-        # Freeze early layers
-        for param in self.model.lstm.parameters():
-            param.requires_grad = False
-
-        # Create data loader
-        target_dataset = TimeSeriesDataset(target_x_seq, target_y_seq)
-        target_loader = DataLoader(target_dataset, batch_size=32, shuffle=True)
-
-        # Fine-tune with lower learning rate
-        criterion = nn.BCELoss()
-        optimizer = optim.Adam(self.model.parameters(), lr=0.0001)
-
-        # Fine-tune the model
-        self.model.train()
-        for epoch in range(50):
-            for batch_x, batch_y in target_loader:
-                batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-                
-                optimizer.zero_grad()
-                outputs = self.model(batch_x).squeeze()
-                loss = criterion(outputs, batch_y)
-                loss.backward()
-                optimizer.step()
-
         return self.model
