@@ -14,3 +14,6 @@ data/selected_features/*
 *.pth
 *.png
 CLAUDE.md
+generate_final_report.py
+analyze_fault_experiments.py
+generate_comprehensive_report.py

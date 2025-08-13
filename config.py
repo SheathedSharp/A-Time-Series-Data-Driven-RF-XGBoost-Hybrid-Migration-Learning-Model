@@ -29,6 +29,34 @@ EXCLUDE_COLUMNS = ['Date', 'Time', 'Production Line Number', 'Material Push Devi
                      'Capping Device Locator Fault 5001', 'Capping Device Capping Fault 5002',
                      'Cap Screwing Device Locator Fault 6001', 'Cap Screwing Device Fault 6002']
 
+MODEL_CONFIGS = {
+    'xgboost': {
+        'script': 'scripts/train_xgboost.py',
+        'description': 'RF-XGBoost hybrid model (temporal features + CBSS + RF selection)',
+        'name': 'RF-XGBOOST HYBRID'
+    },
+    'lightgbm': {
+        'script': 'scripts/train_lightgbm.py',
+        'description': 'Default LightGBM parameters (no optimization)',
+        'name': 'LightGBM BASELINE'
+    },
+    'svm': {
+        'script': 'scripts/train_svm.py', 
+        'description': 'Default SVM parameters (Linear kernel, balanced class weights)',
+        'name': 'SVM BASELINE'
+    },
+    'mlp': {
+        'script': 'scripts/train_mlp.py',
+        'description': 'Default MLP parameters (100-50 hidden layers, early stopping)', 
+        'name': 'MLP BASELINE'
+    },
+    'lstm': {
+        'script': 'scripts/train_lstm.py',
+        'description': 'Default LSTM parameters (sequence modeling)',
+        'name': 'LSTM BASELINE'
+    }
+}
+
 def get_fault_description(fault_code):
     return FAULT_DESCRIPTIONS.get(fault_code, "")
 
