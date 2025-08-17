@@ -8,8 +8,9 @@ MODEL_DIR = os.path.join(PROJECT_ROOT, 'trained_models')
 FEATURE_DIR = os.path.join(DATA_DIR, 'selected_features')
 EXPERIMENT_DIR = os.path.join(PROJECT_ROOT, 'experiments')
 RESULT_DIR = os.path.join(EXPERIMENT_DIR, 'results')
+REPORT_DIR = os.path.join(EXPERIMENT_DIR, 'reports')
 
-for directory in [DATA_DIR, RAW_DATA_DIR, MODEL_DIR, FEATURE_DIR, RESULT_DIR, EXPERIMENT_DIR]:
+for directory in [DATA_DIR, RAW_DATA_DIR, MODEL_DIR, FEATURE_DIR, RESULT_DIR, EXPERIMENT_DIR, REPORT_DIR]:
     os.makedirs(directory, exist_ok=True)
 
 FAULT_DESCRIPTIONS = {

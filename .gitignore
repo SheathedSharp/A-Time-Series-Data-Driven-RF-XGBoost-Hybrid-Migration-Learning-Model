@@ -8,6 +8,7 @@ utils/__pycache__
 experiments/pic/
 experiments/results/*.log
 data/selected_features/*
+experiments/reports/*.md
 *.csv
 *.txt
 *.pkl
@@ -15,5 +16,3 @@ data/selected_features/*
 *.png
 CLAUDE.md
 generate_final_report.py
-analyze_fault_experiments.py
-generate_comprehensive_report.py
