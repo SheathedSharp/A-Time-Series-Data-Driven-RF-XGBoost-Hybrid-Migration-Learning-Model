@@ -58,21 +58,30 @@ def extract_metrics_from_log(log_file_path, model_type='xgboost'):
             precision_match = re.search(r'│\s+Precision\s+│\s+([\d.]+)\s+│', run_content)
             recall_match = re.search(r'│\s+Recall\s+│\s+([\d.]+)\s+│', run_content)
             f1_match = re.search(r'│\s+F1 Score\s+│\s+([\d.]+)\s+│', run_content)
+            # Extract support values for LSTM
+            support_false_match = re.search(r'│\s+False - Support\s+│\s+([\d.]+)\s+│', run_content)
+            support_true_match = re.search(r'│\s+True - Support\s+│\s+([\d.]+)\s+│', run_content)
         elif model_type in ['svm', 'mlp']:
             # SVM and MLP use their own format
             accuracy_match = re.search(r'│\s+Accuracy\s+│\s+([\d.]+)\s+│', run_content)
             precision_match = re.search(r'│\s+Precision\s+│\s+([\d.]+)\s+│', run_content)
             recall_match = re.search(r'│\s+Recall\s+│\s+([\d.]+)\s+│', run_content)
             f1_match = re.search(r'│\s+F1 Score\s+│\s+([\d.]+)\s+│', run_content)
+            # Extract support values for SVM/MLP
+            support_false_match = re.search(r'│\s+False - Support\s+│\s+([\d.]+)\s+│', run_content)
+            support_true_match = re.search(r'│\s+True - Support\s+│\s+([\d.]+)\s+│', run_content)
         else:
             # XGBoost and LightGBM format
             accuracy_match = re.search(r'│\s+Accuracy\s+│\s+([\d.]+)\s+│', run_content)
             precision_match = re.search(r'│\s+Precision\s+│\s+([\d.]+)\s+│', run_content)
             recall_match = re.search(r'│\s+Recall\s+│\s+([\d.]+)\s+│', run_content)
             f1_match = re.search(r'│\s+weighted avg - F1-Score\s+│\s+([\d.]+)\s+│', run_content)
+            # Extract support values for XGBoost/LightGBM
+            support_false_match = re.search(r'│\s+False - Support\s+│\s+([\d.]+)\s+│', run_content)
+            support_true_match = re.search(r'│\s+True - Support\s+│\s+([\d.]+)\s+│', run_content)
         
         if accuracy_match and precision_match and recall_match and f1_match:
-            metrics_list.append({
+            metrics_data = {
                 'Fault_Code': fault_code,
                 'Run': int(run_num),
                 'Random_Seed': int(seed),
@@ -80,7 +89,14 @@ def extract_metrics_from_log(log_file_path, model_type='xgboost'):
                 'Precision': float(precision_match.group(1)),
                 'Recall': float(recall_match.group(1)),
                 'F1_Score': float(f1_match.group(1))
-            })
+            }
+            
+            # Add support values if available
+            if support_false_match and support_true_match:
+                metrics_data['Support_False'] = float(support_false_match.group(1))
+                metrics_data['Support_True'] = float(support_true_match.group(1))
+            
+            metrics_list.append(metrics_data)
     
     return metrics_list
 
@@ -124,7 +140,7 @@ def get_log_pattern(model_type):
         'lightgbm': 'lightgbm_baseline_batch_*.log',
         'svm': 'svm_baseline_batch_*.log',
         'mlp': 'mlp_baseline_batch_*.log',
-        'lstm': 'lstm_batch_*.log'
+        'lstm': 'lstm_baseline_batch_*.log'
     }
     return patterns.get(model_type, f'{model_type}_batch_*.log')
 
@@ -265,10 +281,8 @@ def generate_confusion_matrices_from_metrics(metrics_df):
         avg_precision = fault_data['Precision'].mean()
         avg_recall = fault_data['Recall'].mean()
         
-        total_samples = 6000
-        positive_ratio = 0.18
-        support_true = int(total_samples * positive_ratio)
-        support_false = total_samples - support_true
+        support_true = int(fault_data['Support_True'].iloc[0])
+        support_false = int(fault_data['Support_False'].iloc[0])
         
         cm_elements = calculate_confusion_matrix_from_metrics(
             avg_precision, avg_recall, support_true, support_false
@@ -280,7 +294,9 @@ def generate_confusion_matrices_from_metrics(metrics_df):
             'avg_recall': avg_recall,
             'avg_accuracy': fault_data['Accuracy'].mean(),
             'avg_f1': fault_data['F1_Score'].mean(),
-            'runs': len(fault_data)
+            'runs': len(fault_data),
+            'support_true': support_true,
+            'support_false': support_false
         }
     
     return confusion_matrices
