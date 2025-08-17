@@ -5,7 +5,9 @@ utils/__pycache__
 .claude/
 .venv/
 *.xlsx
-experiments/pic/
+experiments/pic/*.png
+experiments/pic/*.pdf
+experiments/pic/*.eps
 experiments/results/*.log
 data/selected_features/*
 experiments/reports/*.md
