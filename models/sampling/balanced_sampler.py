@@ -261,7 +261,7 @@ class ContinuousBalancedSliceSampler:
     def balance_dataset(self, x_train: pd.DataFrame, x_test: pd.DataFrame, 
                        y_train: pd.Series, y_test: pd.Series,
                        fault_type_col: str = None) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-        """Balance training and test datasets using CBSS.
+        """Balance training dataset using CBSS. Test dataset remains unchanged.
         
         Args:
             x_train (pd.DataFrame): Training features
@@ -271,40 +271,34 @@ class ContinuousBalancedSliceSampler:
             fault_type_col (str): Optional fault type column name
             
         Returns:
-            Tuple containing balanced training and test data
+            Tuple containing balanced training data and original test data
         """
         with self.progress.sampling_status() as status:
             status.update("Analyzing fault patterns...")
-            # Combine features and labels
+            # Combine features and labels for training data only
             train_data = x_train.copy()
-            test_data = x_test.copy()
             train_data['label'] = y_train
-            test_data['label'] = y_test
             
             status.update("Creating balanced subsets...")
-            # Create balanced subsets
+            # Create balanced subsets for training data only
             train_subsets = self.create_balanced_subsets(train_data, fault_type_col)
-            test_subsets = self.create_balanced_subsets(test_data, fault_type_col)
             
             # Handle empty subsets
             if not train_subsets:
                 self.progress.display_warning("No balanced training subsets created")
                 return x_train, x_test, y_train, y_test
             
-            if not test_subsets:
-                self.progress.display_warning("No balanced test subsets created")
-                return x_train, x_test, y_train, y_test
-            
             status.update("Combining balanced subsets...")
             # Combine subsets and sort by index to maintain temporal order
             balanced_train = pd.concat(train_subsets).sort_index()
-            balanced_test = pd.concat(test_subsets).sort_index()
             
             # Split features and labels
             x_train_balanced = balanced_train.drop('label', axis=1)
             y_train_balanced = balanced_train['label']
-            x_test_balanced = balanced_test.drop('label', axis=1)
-            y_test_balanced = balanced_test['label']
+            
+            # Test data remains unchanged (standard practice)
+            x_test_balanced = x_test.copy()
+            y_test_balanced = y_test.copy()
             
             status.complete("Dataset balancing completed")
             

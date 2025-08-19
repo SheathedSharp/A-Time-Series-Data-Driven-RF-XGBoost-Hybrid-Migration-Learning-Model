@@ -5,18 +5,21 @@ import pandas as pd
 from models.prediction.xgboost_predictor import XGBoostPredictor
 from models.feature_engineering.feature_selector import FeatureSelector
 from models.sampling.balanced_sampler import ContinuousBalancedSliceSampler
+from models.sampling.random_undersampler import RandomUndersamplerWrapper
+from models.sampling.nearmiss_sampler import NearMissSampler
+from models.sampling.cluster_centroids_sampler import ClusterCentroidsSampler
 from utils.data_loader import DataLoader
 from utils.data_process import split_train_test_datasets, remove_irrelevant_features
 from config import MODEL_DIR, FAULT_DESCRIPTIONS, get_feature_path
 import argparse
 
-def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_threshold=0.9, use_balance=True, parameter_optimization=False, random_state=42):
+def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_threshold=0.9, sampling_method='cbss', parameter_optimization=False, random_state=42):
     """
-    Train and evaluate XGBoost model with optional CBSS balancing and RF feature selection.
+    Train and evaluate XGBoost model with optional sampling and RF feature selection.
     
     Processing pipeline:
     1. Load and split data
-    2. Apply CBSS balancing if use_balance=True (affects both RF and XGBoost)
+    2. Apply sampling if use_balance=True (affects both RF and XGBoost)
     3. Apply RF feature selection if use_rf=True (on balanced/imbalanced data based on step 2)
     4. Train XGBoost on the final processed data
     
@@ -26,7 +29,7 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
         temporal (bool): Whether to use temporal features
         use_rf (bool): Whether to use Random Forest for feature selection
         rf_threshold (float): Feature importance threshold for RF selection
-        use_balance (bool): Whether to apply CBSS balancing to datasets
+        sampling_method (str): Sampling method to use ('cbss', 'random_under', 'nearmiss', 'cluster_centroids', 'none')
         parameter_optimization (bool): Whether to use parameter optimization for XGBoost
         random_state (int): Random seed for reproducibility
     """
@@ -48,15 +51,38 @@ def xgboost_predict(production_line_code, fault_code, temporal, use_rf=True, rf_
     y_test = test_data['label']
     x_test = test_data.drop('label', axis=1)
 
-    # Apply CBSS balancing if requested  
-    if use_balance:
-        sampler = ContinuousBalancedSliceSampler(
-            k=4.0, 
-            alpha=1.96, 
-            beta=10.0,
-            min_precursor_length=60,
-            max_precursor_length=1800
-        )
+    # Apply sampling if requested  
+    if sampling_method != 'none':
+        if sampling_method == 'cbss':
+            sampler = ContinuousBalancedSliceSampler(
+                k=4.0, 
+                alpha=1.96, 
+                beta=10.0,
+                min_precursor_length=60,
+                max_precursor_length=1800
+            )
+        elif sampling_method == 'random_under':
+            sampler = RandomUndersamplerWrapper(
+                sampling_strategy='auto',
+                random_state=random_state
+            )
+        elif sampling_method == 'nearmiss':
+            sampler = NearMissSampler(
+                version=1,
+                n_neighbors=3,
+                sampling_strategy='auto',
+                n_jobs=1
+            )
+        elif sampling_method == 'cluster_centroids':
+            sampler = ClusterCentroidsSampler(
+                estimator=None,
+                sampling_strategy='auto',
+                random_state=random_state,
+                voting='auto'
+            )
+        else:
+            raise ValueError(f"Unknown sampling method: {sampling_method}. Choose from 'cbss', 'random_under', 'ncr', 'cluster_centroids', 'none'")
+        
         x_train_balanced, x_test_balanced, y_train_balanced, y_test_balanced = sampler.balance_dataset(
             x_train, x_test, y_train, y_test
         )
@@ -112,11 +138,11 @@ if __name__ == "__main__":
 
     parser.add_argument('--no-rf', action='store_false', dest='use_rf', help='Do not use Random Forest for feature selection')
     parser.add_argument('--rf-threshold', type=float, default=0.9, help='Threshold for feature selection')
-    parser.add_argument('--no-balance', action='store_false', dest='use_balance', help='Do not balance dataset using CBSS')
+    parser.add_argument('--sampling-method', type=str, default='cbss', choices=['cbss', 'random_under', 'nearmiss', 'cluster_centroids', 'none'], help='Sampling method to use (default: cbss)')
     parser.add_argument('--parameter-opt', action='store_true', dest='parameter_optimization', help='Use parameter optimization')
     parser.add_argument('--random-state', type=int, default=42, help='Random state for reproducibility')
 
-    parser.set_defaults(temporal=True, use_rf=True, use_balance=True, parameter_optimization=False)
+    parser.set_defaults(temporal=True, use_rf=True, parameter_optimization=False)
 
     # Parse command line arguments
     args = parser.parse_args()
@@ -127,7 +153,7 @@ if __name__ == "__main__":
         args.temporal,
         args.use_rf,
         args.rf_threshold,
-        args.use_balance,
+        args.sampling_method,
         args.parameter_optimization,
         args.random_state
     )
