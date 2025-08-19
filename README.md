@@ -11,9 +11,12 @@ Our approach consists of four main components:
 - **Vertical Processing**: Incorporates time-lagged features to capture temporal patterns
 - Transforms raw production line data into time series-aware features
 
-### 2. Balanced Random Forest Feature Selection
-- Custom sampling method to handle imbalanced fault data
-- Maintains temporal characteristics during sampling
+### 2. Sampling Methods for Imbalanced Data
+- **CBSS (Continuous Balanced Slice Sampler)**: Custom temporal-aware sampling method
+- **Random Under Sampling**: Random reduction of majority class samples (fast)
+- **NearMiss**: Distance-based intelligent undersampling (boundary-aware)
+- **Cluster Centroids**: K-means clustering-based sophisticated undersampling (centroid-based)
+- Supports ablation studies to evaluate sampling method effectiveness
 
 ### 3. Feature Migration
 - Uses Random Forest to evaluate feature importance
@@ -66,7 +69,7 @@ Optional parameters:
 
 `--threshold` specifies the feature importance threshold (default: 0.9).
 
-`--no-balance` disables balanced sampling.
+`--sampling-method` specifies the sampling method ('cbss', 'random_under', 'nearmiss', 'cluster_centroids', 'none').
 
 `--no-temporal` disables temporal feature engineering.
 
@@ -74,6 +77,25 @@ Optional parameters:
 To train the XGBoost model, run:
 ```
 uv run python scripts/train_xgboost.py --production_line 1 --fault_code 1001
+```
+
+#### Sampling Ablation Experiments
+To conduct sampling ablation studies, use different sampling methods:
+```bash
+# CBSS sampling (default - temporal-aware)
+uv run python scripts/train_xgboost.py --production_line 1 --fault_code 1001 --sampling-method cbss
+
+# Random undersampling (majority class reduction - fast)
+uv run python scripts/train_xgboost.py --production_line 1 --fault_code 1001 --sampling-method random_under
+
+# NearMiss undersampling (distance-based intelligent undersampling)
+uv run python scripts/train_xgboost.py --production_line 1 --fault_code 1001 --sampling-method nearmiss
+
+# Cluster Centroids undersampling (intelligent K-means based)
+uv run python scripts/train_xgboost.py --production_line 1 --fault_code 1001 --sampling-method cluster_centroids
+
+# No sampling (raw imbalanced data)
+uv run python scripts/train_xgboost.py --production_line 1 --fault_code 1001 --sampling-method none
 ```
 Required parameters:
 
@@ -89,9 +111,9 @@ Optional parameters:
 
 `--no-rf` disables RF feature selection.
 
-`--no-balance` disables balanced sampling.
+`--sampling-method` specifies the sampling method ('cbss', 'random_under', 'nearmiss', 'cluster_centroids', 'none') (default: cbss).
 
-`--rf_threshold` specifies the feature importance threshold for RF (default: 0.9).
+`--rf-threshold` specifies the feature importance threshold for RF (default: 0.9).
 
 ## Citation
 ....
